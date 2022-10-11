@@ -609,6 +609,12 @@ impl PlatformConfig {
             .map_err(Error::ParsePlatform)?
             .unwrap_or(Toggle(false))
             .0;
+        #[cfg(feature = "snp")]
+        let snp = parser
+            .convert::<Toggle>("snp")
+            .map_err(Error::ParsePlatform)?
+            .unwrap_or(Toggle(false))
+            .0;
         Ok(PlatformConfig {
             num_pci_segments,
             iommu_segments,
@@ -617,6 +623,8 @@ impl PlatformConfig {
             oem_strings,
             #[cfg(feature = "tdx")]
             tdx,
+            #[cfg(feature = "snp")]
+            snp,
         })
     }
 
