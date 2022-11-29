@@ -1221,7 +1221,8 @@ impl Vmm {
         let timestamp = Instant::now();
         let hypervisor_vm = mm.lock().unwrap().vm.clone();
         let cpus_config = { &self.vm_config.clone().expect("CpuConfig missing").lock().unwrap().cpus.clone() };
-        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, hypervisor_vm.clone());
+        let mut inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, hypervisor_vm.clone());
+        inner_cpu_manager.create_boot_vcpus().unwrap();
 
         let mut vm = Vm::new_from_memory_manager(
             self.vm_config.clone().unwrap(),

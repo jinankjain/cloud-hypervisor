@@ -171,6 +171,9 @@ pub enum Error {
     #[error("invalid VM state transition: {0:?} to {1:?}")]
     InvalidStateTransition(VmState, VmState),
 
+    #[error("Error from Inner CPU manager: {0}")]
+    InnerCpuManager(#[source] cpu::Error),
+
     #[error("Error from CPU manager: {0}")]
     CpuManager(#[source] cpu::Error),
 
@@ -539,12 +542,6 @@ impl Vm {
         cpu_manager
             .lock()
             .unwrap()
-            .create_boot_vcpus()
-            .map_err(Error::CpuManager)?;
-
-        cpu_manager
-            .lock()
-            .unwrap()
             .setup_vm_ops(vm_ops.clone())
             .map_err(Error::CpuManager)?;
 
@@ -736,7 +733,9 @@ impl Vm {
         let sgx_epc_config = config.lock().unwrap().sgx_epc.clone();
 
         let cpus_config = { &config.lock().unwrap().cpus.clone() };
-        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone());
+        let mut inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone());
+
+        inner_cpu_manager.create_boot_vcpus().map_err(Error::InnerCpuManager)?;
 
         let memory_manager = MemoryManager::new(
             vm.clone(),
@@ -802,7 +801,8 @@ impl Vm {
         )?;
 
         let cpus_config = { &vm_config.lock().unwrap().cpus.clone() };
-        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone());
+        let mut inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone());
+        inner_cpu_manager.create_boot_vcpus().map_err(Error::InnerCpuManager)?;
 
         let memory_manager = if let Some(memory_manager_snapshot) =
             snapshot.snapshots.get(MEMORY_MANAGER_SNAPSHOT_ID)
