@@ -20,6 +20,8 @@ use crate::CpuState;
 use crate::MpState;
 use thiserror::Error;
 use vm_memory::GuestAddress;
+use std::sync::Arc;
+use crate::vm::VmOps;
 
 #[derive(Error, Debug)]
 ///
@@ -267,6 +269,10 @@ pub type Result<T> = anyhow::Result<T, HypervisorCpuError>;
 /// Trait to represent a generic Vcpu
 ///
 pub trait Vcpu: Send + Sync {
+    ///
+    /// Sets the vm ops struct for vcpu
+    ///
+    fn set_vm_ops(&mut self, vm_ops: Option<Arc<dyn VmOps>>);
     ///
     /// Returns the vCPU general purpose registers.
     ///
