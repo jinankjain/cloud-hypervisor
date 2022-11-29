@@ -521,20 +521,21 @@ impl Vm {
         });
 
         let cpus_config = { &config.lock().unwrap().cpus.clone() };
+
+        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone(), vm_ops);
+
         let cpu_manager = cpu::CpuManager::new(
-            cpus_config,
             &memory_manager,
-            vm.clone(),
             exit_evt.try_clone().map_err(Error::EventFdClone)?,
             reset_evt.try_clone().map_err(Error::EventFdClone)?,
             #[cfg(feature = "guest_debug")]
             vm_debug_evt,
             hypervisor.clone(),
             seccomp_action.clone(),
-            vm_ops,
             #[cfg(feature = "tdx")]
             tdx_enabled,
             &numa_nodes,
+            inner_cpu_manager,
         )
         .map_err(Error::CpuManager)?;
 
