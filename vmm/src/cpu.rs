@@ -437,14 +437,13 @@ pub struct InnerCpuManager {
     vcpu_states: Vec<VcpuState>,
     #[cfg_attr(target_arch = "aarch64", allow(dead_code))]
     vm: Arc<dyn hypervisor::Vm>,
-    vm_ops: Arc<dyn VmOps>,
+    vm_ops: Option<Arc<dyn VmOps>>,
 }
 
 impl InnerCpuManager {
     pub fn new(
         config: &CpusConfig,
         vm: Arc<dyn hypervisor::Vm>,
-        vm_ops: Arc<dyn VmOps>,
     ) -> InnerCpuManager {
         let mut vcpu_states = Vec::with_capacity(usize::from(config.max_vcpus));
         vcpu_states.resize_with(usize::from(config.max_vcpus), VcpuState::default);
@@ -454,7 +453,7 @@ impl InnerCpuManager {
             vcpus: Vec::with_capacity(usize::from(config.max_vcpus)),
             vcpu_states,
             vm,
-            vm_ops,
+            vm_ops: None,
         }
     }
 
@@ -474,7 +473,7 @@ impl InnerCpuManager {
         let vcpu = Arc::new(Mutex::new(Vcpu::new(
             cpu_id,
             &self.vm,
-            Some(self.vm_ops.clone()),
+            None,
         )?));
 
         // Adding vCPU to the CpuManager's vCPU list.
@@ -484,6 +483,8 @@ impl InnerCpuManager {
     }
 
     pub fn setup_vm_ops(&mut self, vm_ops: Arc<dyn VmOps>) -> Result<()> {
+        self.vm_ops = Some(vm_ops.clone());
+
         for vcpu in self.vcpus.iter_mut() {
             let mut vcpu_elem = vcpu.lock().unwrap();
             if let Some(vcpu) = Arc::get_mut(&mut vcpu_elem.vcpu) {
@@ -1160,6 +1161,10 @@ impl CpuManager {
         state.kill.store(false, Ordering::SeqCst);
 
         Ok(())
+    }
+
+    pub fn setup_vm_ops(&mut self, vm_ops: Arc<dyn VmOps>) -> Result<()> {
+        self.inner_cpu_manager.setup_vm_ops(vm_ops)
     }
 
     pub fn create_boot_vcpus(&mut self) -> Result<Vec<Arc<Mutex<Vcpu>>>> {

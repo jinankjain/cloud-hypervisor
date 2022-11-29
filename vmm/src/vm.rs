@@ -20,7 +20,7 @@ use crate::config::{NumaConfig, PayloadConfig};
 use crate::coredump::{
     CpuElf64Writable, DumpState, Elf64Writable, GuestDebuggable, GuestDebuggableError, NoteDescType,
 };
-use crate::cpu;
+use crate::cpu::{self, InnerCpuManager};
 use crate::device_manager::{Console, DeviceManager, DeviceManagerError, PtyPair};
 use crate::device_tree::DeviceTree;
 #[cfg(feature = "guest_debug")]
@@ -475,6 +475,7 @@ impl Vm {
         restoring: bool,
         timestamp: Instant,
         snapshot: Option<&Snapshot>,
+        inner_cpu_manager: InnerCpuManager,
     ) -> Result<Self> {
         trace_scoped!("Vm::new_from_memory_manager");
 
@@ -520,10 +521,6 @@ impl Vm {
             mmio_bus: mmio_bus.clone(),
         });
 
-        let cpus_config = { &config.lock().unwrap().cpus.clone() };
-
-        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone(), vm_ops);
-
         let cpu_manager = cpu::CpuManager::new(
             &memory_manager,
             exit_evt.try_clone().map_err(Error::EventFdClone)?,
@@ -543,6 +540,12 @@ impl Vm {
             .lock()
             .unwrap()
             .create_boot_vcpus()
+            .map_err(Error::CpuManager)?;
+
+        cpu_manager
+            .lock()
+            .unwrap()
+            .setup_vm_ops(vm_ops.clone())
             .map_err(Error::CpuManager)?;
 
         #[cfg(feature = "tdx")]
@@ -732,6 +735,9 @@ impl Vm {
         #[cfg(target_arch = "x86_64")]
         let sgx_epc_config = config.lock().unwrap().sgx_epc.clone();
 
+        let cpus_config = { &config.lock().unwrap().cpus.clone() };
+        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone());
+
         let memory_manager = MemoryManager::new(
             vm.clone(),
             &config.lock().unwrap().memory.clone(),
@@ -760,6 +766,7 @@ impl Vm {
             false,
             timestamp,
             None,
+            inner_cpu_manager,
         )?;
 
         // The device manager must create the devices from here as it is part
@@ -794,6 +801,9 @@ impl Vm {
             false,
         )?;
 
+        let cpus_config = { &vm_config.lock().unwrap().cpus.clone() };
+        let inner_cpu_manager = cpu::InnerCpuManager::new(cpus_config, vm.clone());
+
         let memory_manager = if let Some(memory_manager_snapshot) =
             snapshot.snapshots.get(MEMORY_MANAGER_SNAPSHOT_ID)
         {
@@ -827,6 +837,7 @@ impl Vm {
             true,
             timestamp,
             Some(snapshot),
+            inner_cpu_manager,
         )
     }
 
