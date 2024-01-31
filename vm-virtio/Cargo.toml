@@ -6,6 +6,8 @@ version = "0.1.0"
 
 [features]
 default = []
+mshv = []
+sev_snp = []
 
 [dependencies]
 log = "0.4.21"
