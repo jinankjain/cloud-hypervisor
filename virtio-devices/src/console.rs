@@ -106,6 +106,8 @@ struct ConsoleEpollHandler {
     out: Option<Box<dyn Write + Send>>,
     write_out: Option<Arc<AtomicBool>>,
     file_event_registered: bool,
+    #[cfg(all(feature = "mshv", feature = "sev_snp"))]
+    vm: Arc<dyn hypervisor::Vm>,
 }
 
 pub enum Endpoint {
@@ -171,6 +173,7 @@ impl ConsoleEpollHandler {
         kill_evt: EventFd,
         pause_evt: EventFd,
         access_platform: Option<Arc<dyn AccessPlatform>>,
+        #[cfg(all(feature = "mshv", feature = "sev_snp"))] vm: Arc<dyn hypervisor::Vm>,
     ) -> Self {
         let out_file = endpoint.out_file();
         let (out, write_out) = if let Some(out_file) = out_file {
@@ -205,6 +208,8 @@ impl ConsoleEpollHandler {
             out,
             write_out,
             file_event_registered: false,
+            #[cfg(all(feature = "mshv", feature = "sev_snp"))]
+            vm,
         }
     }
 
@@ -589,6 +594,8 @@ pub struct Console {
     seccomp_action: SeccompAction,
     in_buffer: Arc<Mutex<VecDeque<u8>>>,
     exit_evt: EventFd,
+    #[cfg(all(feature = "mshv", feature = "sev_snp"))]
+    vm: Arc<dyn hypervisor::Vm>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -628,6 +635,7 @@ impl Console {
         seccomp_action: SeccompAction,
         exit_evt: EventFd,
         state: Option<ConsoleState>,
+        #[cfg(all(feature = "mshv", feature = "sev_snp"))] vm: Arc<dyn hypervisor::Vm>,
     ) -> io::Result<(Console, Arc<ConsoleResizer>)> {
         let (avail_features, acked_features, config, in_buffer, paused) = if let Some(state) = state
         {
@@ -685,6 +693,8 @@ impl Console {
                 seccomp_action,
                 in_buffer: Arc::new(Mutex::new(in_buffer)),
                 exit_evt,
+                #[cfg(all(feature = "mshv", feature = "sev_snp"))]
+                vm,
             },
             resizer,
         ))
@@ -773,6 +783,8 @@ impl VirtioDevice for Console {
             kill_evt,
             pause_evt,
             self.common.access_platform.clone(),
+            #[cfg(all(feature = "mshv", feature = "sev_snp"))]
+            self.vm.clone(),
         );
 
         let paused = self.common.paused.clone();

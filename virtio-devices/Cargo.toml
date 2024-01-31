@@ -6,7 +6,8 @@ version = "0.1.0"
 
 [features]
 default = []
-sev_snp = []
+mshv = ["hypervisor"]
+sev_snp = ["hypervisor"]
 
 [dependencies]
 anyhow = "1.0.81"
@@ -17,6 +18,7 @@ epoll = "4.3.3"
 event_monitor = { path = "../event_monitor" }
 libc = "0.2.153"
 log = "0.4.21"
+hypervisor = { path = "../hypervisor", optional = true}
 net_gen = { path = "../net_gen" }
 net_util = { path = "../net_util" }
 pci = { path = "../pci" }
