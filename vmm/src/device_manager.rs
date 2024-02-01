@@ -2413,6 +2413,8 @@ impl DeviceManager {
                     state_from_id(self.snapshot.as_ref(), id.as_str())
                         .map_err(DeviceManagerError::RestoreGetState)?,
                     queue_affinity,
+                    #[cfg(feature = "sev_snp")]
+                    self.address_manager.vm.clone(),
                 )
                 .map_err(DeviceManagerError::CreateVirtioBlock)?,
             ));
