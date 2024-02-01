@@ -2645,6 +2645,8 @@ impl DeviceManager {
                         .map_err(DeviceManagerError::EventFd)?,
                     state_from_id(self.snapshot.as_ref(), id.as_str())
                         .map_err(DeviceManagerError::RestoreGetState)?,
+                    #[cfg(feature = "sev_snp")]
+                    self.address_manager.vm.clone(),
                 )
                 .map_err(DeviceManagerError::CreateVirtioRng)?,
             ));
