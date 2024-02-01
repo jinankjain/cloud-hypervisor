@@ -4,11 +4,16 @@ edition = "2021"
 name = "net_util"
 version = "0.1.0"
 
+[features]
+default = []
+sev_snp = ["hypervisor"]
+
 [dependencies]
 epoll = "4.3.3"
 getrandom = "0.2.14"
 libc = "0.2.153"
 log = "0.4.21"
+hypervisor = { path = "../hypervisor", optional = true }
 net_gen = { path = "../net_gen" }
 rate_limiter = { path = "../rate_limiter" }
 serde = { version = "1.0.197", features = ["derive"] }

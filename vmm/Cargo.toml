@@ -13,7 +13,7 @@ igvm = ["dep:igvm", "hex", "igvm_defs", "mshv-bindings", "range_map_vec"]
 io_uring = ["block/io_uring"]
 kvm = ["hypervisor/kvm", "pci/kvm", "vfio-ioctls/kvm", "vm-device/kvm"]
 mshv = ["block/mshv", "hypervisor/mshv", "pci/mshv", "vfio-ioctls/mshv", "virtio-devices/mshv", "vm-device/mshv", "vm-virtio/mshv"]
-sev_snp = ["arch/sev_snp", "block/sev_snp", "hypervisor/sev_snp", "virtio-devices/sev_snp", "vm-virtio/mshv"]
+sev_snp = ["arch/sev_snp", "block/sev_snp", "hypervisor/sev_snp", "net_util/sev_snp", "virtio-devices/sev_snp", "vm-virtio/sev_snp"]
 tdx = ["arch/tdx", "hypervisor/tdx"]
 tracing = ["tracer/tracing"]
 
