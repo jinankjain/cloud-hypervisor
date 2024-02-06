@@ -47,6 +47,8 @@ thiserror = "1.0.60"
 tpm = { path = "tpm" }
 tracer = { path = "tracer" }
 vm-memory = "0.14.1"
+vhost_user_block = { path = "vhost_user_block" }
+vhost_user_net = { path = "vhost_user_net" }
 vmm = { path = "vmm" }
 vmm-sys-util = "0.12.1"
 zbus = { version = "4.1.2", optional = true }
@@ -70,7 +72,7 @@ igvm = ["mshv", "vmm/igvm"]
 io_uring = ["vmm/io_uring"]
 kvm = ["vmm/kvm"]
 mshv = ["vmm/mshv"]
-sev_snp = ["igvm", "mshv", "vmm/sev_snp"]
+sev_snp = ["igvm", "mshv", "vmm/sev_snp", "vhost_user_block/sev_snp", "vhost_user_net/sev_snp"]
 tdx = ["vmm/tdx"]
 tracing = ["tracer/tracing", "vmm/tracing"]
 
