@@ -3,12 +3,10 @@
 // Copyright © 2023, Microsoft Corporation
 //
 use crate::cpu::CpuManager;
-use zerocopy::AsBytes;
-
 use crate::igvm::{
     loader::Loader, BootPageAcceptance, IgvmLoadedInfo, StartupMemoryType, HV_PAGE_SIZE,
 };
-use crate::memory_manager::MemoryManager;
+use crate::memory_manager::{Error as MemoryManagerError, MemoryManager};
 use igvm::{snp_defs::SevVmsa, IgvmDirectiveHeader, IgvmFile, IgvmPlatformHeader, IsolationType};
 use igvm_defs::{
     IgvmPageDataType, IgvmPlatformType, IGVM_VHS_PARAMETER, IGVM_VHS_PARAMETER_INSERT,
@@ -22,6 +20,7 @@ use std::io::SeekFrom;
 use std::mem::size_of;
 use std::sync::{Arc, Mutex};
 use thiserror::Error;
+use zerocopy::AsBytes;
 
 #[cfg(feature = "sev_snp")]
 use crate::GuestMemoryMmap;
@@ -48,6 +47,8 @@ pub enum Error {
     CompleteIsolatedImport(#[source] hypervisor::HypervisorVmError),
     #[error("Error decoding host data: {0}")]
     FailedToDecodeHostData(#[source] hex::FromHexError),
+    #[error("allocate address space")]
+    MemoryManager(MemoryManagerError),
 }
 
 #[allow(dead_code)]
@@ -420,6 +421,11 @@ pub fn load_igvm(
 
     #[cfg(feature = "sev_snp")]
     {
+        memory_manager
+            .lock()
+            .unwrap()
+            .allocate_address_space()
+            .map_err(Error::MemoryManager)?;
         use std::time::Instant;
 
         let mut now = Instant::now();
