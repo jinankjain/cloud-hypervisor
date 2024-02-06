@@ -471,6 +471,7 @@ pub struct Vm {
     hypervisor: Arc<dyn hypervisor::Hypervisor>,
     stop_on_boot: bool,
     load_payload_handle: Option<thread::JoinHandle<Result<EntryPoint>>>,
+    sev_snp_enabled: bool,
 }
 
 impl Vm {
@@ -516,6 +517,8 @@ impl Vm {
 
         #[cfg(feature = "tdx")]
         let tdx_enabled = config.lock().unwrap().is_tdx_enabled();
+        #[cfg(not(feature = "sev_snp"))]
+        let sev_snp_enabled = false;
         #[cfg(feature = "sev_snp")]
         let sev_snp_enabled = config.lock().unwrap().is_sev_snp_enabled();
         #[cfg(feature = "tdx")]
@@ -701,6 +704,7 @@ impl Vm {
             hypervisor,
             stop_on_boot,
             load_payload_handle,
+            sev_snp_enabled,
         })
     }
 
