@@ -9377,7 +9377,7 @@ mod vfio {
                 "--igvm",
                 direct_igvm_boot_path(Some("hvc0")).to_str().unwrap(),
             ])
-            .args(["--platform", "snp=on"])
+            .args(["--platform", "sev_snp=on"])
             .default_disks()
             .default_net()
             .capture_output()
