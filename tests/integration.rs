@@ -5904,7 +5904,7 @@ mod common_parallel {
 
     #[test]
     fn test_pmem_multi_segment_hotplug() {
-        _test_pmem_hotplug(Some(15))
+        _test_pmem_hotplug(Some(6))
     }
 
     fn _test_pmem_hotplug(pci_segment: Option<u16>) {
@@ -6047,7 +6047,7 @@ mod common_parallel {
 
     #[test]
     fn test_net_multi_segment_hotplug() {
-        _test_net_hotplug(Some(15))
+        _test_net_hotplug(Some(6))
     }
 
     fn _test_net_hotplug(pci_segment: Option<u16>) {
