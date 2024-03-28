@@ -13,9 +13,7 @@ use crate::hypervisor;
 use crate::vec_with_array_field;
 use crate::vm::{self, InterruptSourceConfig, VmOps};
 use crate::HypervisorType;
-#[cfg(feature = "sev_snp")]
-use igvm_parser::page_table::X64_PAGE_SIZE as HV_PAGE_SIZE;
-use mshv_bindings::*;
+pub use mshv_bindings::*;
 use mshv_ioctls::{set_registers_64, InterruptRequest, Mshv, NoDatamatch, VcpuFd, VmFd, VmType};
 use std::any::Any;
 use std::collections::HashMap;
@@ -365,7 +363,7 @@ impl hypervisor::Hypervisor for MshvHypervisor {
                 #[cfg(feature = "sev_snp")]
                 host_access_pages: Arc::new(SimpleAtomicBitmap::new_with_bytes(
                     mem_size_for_bitmap,
-                    HV_PAGE_SIZE as usize,
+                    HV_PAGE_SIZE,
                 )),
             }))
         }
