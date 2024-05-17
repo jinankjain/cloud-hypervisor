@@ -187,3 +187,45 @@ pub enum IrqRoutingEntry {
     #[cfg(feature = "mshv")]
     Mshv(mshv_bindings::mshv_msi_routing_entry),
 }
+
+#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+pub enum StandardRegisters {
+    #[cfg(feature = "kvm")]
+    Kvm(kvm_bindings::kvm_regs),
+    #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+    Mshv(mshv_bindings::StandardRegisters),
+}
+
+macro_rules! set_x86_64_reg {
+    ($op:ident, $reg_name:ident) => {
+        #[cfg(target_arch = "x86_64")]
+        impl StandardRegisters {
+            pub fn $op(&mut self, val: u64) {
+                match self {
+                    #[cfg(feature = "kvm")]
+                    StandardRegisters::Kvm(s) => s.$reg_name = val,
+                    #[cfg(feature = "mshv")]
+                    StandardRegisters::Mshv(s) => s.$reg_name = val,
+                }
+            }
+        }
+    };
+}
+
+set_x86_64_reg!(set_rax, rax);
+set_x86_64_reg!(set_rbx, rbx);
+set_x86_64_reg!(set_rcx, rcx);
+set_x86_64_reg!(set_rdx, rdx);
+set_x86_64_reg!(set_rsi, rsi);
+set_x86_64_reg!(set_rdi, rdi);
+set_x86_64_reg!(set_rsp, rsp);
+set_x86_64_reg!(set_r8, r8);
+set_x86_64_reg!(set_r9, r9);
+set_x86_64_reg!(set_r10, r10);
+set_x86_64_reg!(set_r11, r11);
+set_x86_64_reg!(set_r12, r12);
+set_x86_64_reg!(set_r13, r13);
+set_x86_64_reg!(set_r14, r14);
+set_x86_64_reg!(set_r15, r15);
+set_x86_64_reg!(set_rip, rip);
+set_x86_64_reg!(set_rflags, rflags);
