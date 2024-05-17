@@ -16,6 +16,7 @@ use crate::GuestMemoryMmap;
 use crate::InitramfsConfig;
 use crate::RegionType;
 use hypervisor::arch::x86::{CpuIdEntry, CPUID_FLAG_VALID_INDEX};
+use hypervisor::HypervisorType;
 use hypervisor::{CpuVendor, HypervisorCpuError, HypervisorError};
 use linux_loader::loader::bootparam::{boot_params, setup_header};
 use linux_loader::loader::elf::start_info::{
@@ -789,6 +790,7 @@ pub fn configure_vcpu(
     kvm_hyperv: bool,
     cpu_vendor: CpuVendor,
     topology: Option<(u8, u8, u8)>,
+    hypervisor_type: HypervisorType,
 ) -> super::Result<()> {
     let x2apic_id = get_x2apic_id(id as u32, topology);
 
@@ -848,7 +850,8 @@ pub fn configure_vcpu(
 
     regs::setup_msrs(vcpu).map_err(Error::MsrsConfiguration)?;
     if let Some((kernel_entry_point, guest_memory)) = boot_setup {
-        regs::setup_regs(vcpu, kernel_entry_point).map_err(Error::RegsConfiguration)?;
+        regs::setup_regs(vcpu, kernel_entry_point, hypervisor_type)
+            .map_err(Error::RegsConfiguration)?;
         regs::setup_fpu(vcpu).map_err(Error::FpuConfiguration)?;
         regs::setup_sregs(&guest_memory.memory(), vcpu).map_err(Error::SregsConfiguration)?;
     }

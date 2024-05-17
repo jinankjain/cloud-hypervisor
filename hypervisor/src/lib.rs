@@ -196,6 +196,38 @@ pub enum StandardRegisters {
     Mshv(mshv_bindings::StandardRegisters),
 }
 
+impl StandardRegisters {
+    #[cfg(feature = "kvm")]
+    fn kvm(self) -> kvm_bindings::kvm_regs {
+        if let StandardRegisters::Kvm(s) = self {
+            s
+        } else {
+            panic!("Unwrapping kvm_regs failed!")
+        }
+    }
+
+    #[cfg(feature = "kvm")]
+    pub fn get_default_kvm() -> Self {
+        let kvm_regs = kvm_bindings::kvm_regs::default();
+        StandardRegisters::Kvm(kvm_regs)
+    }
+
+    #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+    pub fn get_default_mshv() -> Self {
+        let mshv_regs = mshv_bindings::StandardRegisters::default();
+        StandardRegisters::Mshv(mshv_regs)
+    }
+
+    #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+    fn mshv(self) -> mshv_bindings::StandardRegisters {
+        if let StandardRegisters::Mshv(s) = self {
+            s
+        } else {
+            panic!("Unwrapping mshv standard register failed!")
+        }
+    }
+}
+
 macro_rules! set_x86_64_reg {
     ($op:ident, $reg_name:ident) => {
         #[cfg(target_arch = "x86_64")]
@@ -212,6 +244,41 @@ macro_rules! set_x86_64_reg {
     };
 }
 
+macro_rules! get_x86_64_reg {
+    ($op:ident, $reg_name:ident) => {
+        #[cfg(target_arch = "x86_64")]
+        impl StandardRegisters {
+            pub fn $op(&self) -> u64 {
+                match self {
+                    #[cfg(feature = "kvm")]
+                    StandardRegisters::Kvm(s) => s.$reg_name,
+                    #[cfg(feature = "mshv")]
+                    StandardRegisters::Mshv(s) => s.$reg_name,
+                }
+            }
+        }
+    };
+}
+
+get_x86_64_reg!(get_rax, rax);
+get_x86_64_reg!(get_rbx, rbx);
+get_x86_64_reg!(get_rcx, rcx);
+get_x86_64_reg!(get_rdx, rdx);
+get_x86_64_reg!(get_rsi, rsi);
+get_x86_64_reg!(get_rdi, rdi);
+get_x86_64_reg!(get_rsp, rsp);
+get_x86_64_reg!(get_rbp, rbp);
+get_x86_64_reg!(get_r8, r8);
+get_x86_64_reg!(get_r9, r9);
+get_x86_64_reg!(get_r10, r10);
+get_x86_64_reg!(get_r11, r11);
+get_x86_64_reg!(get_r12, r12);
+get_x86_64_reg!(get_r13, r13);
+get_x86_64_reg!(get_r14, r14);
+get_x86_64_reg!(get_r15, r15);
+get_x86_64_reg!(get_rip, rip);
+get_x86_64_reg!(get_rflags, rflags);
+
 set_x86_64_reg!(set_rax, rax);
 set_x86_64_reg!(set_rbx, rbx);
 set_x86_64_reg!(set_rcx, rcx);
@@ -219,6 +286,7 @@ set_x86_64_reg!(set_rdx, rdx);
 set_x86_64_reg!(set_rsi, rsi);
 set_x86_64_reg!(set_rdi, rdi);
 set_x86_64_reg!(set_rsp, rsp);
+set_x86_64_reg!(set_rbp, rbp);
 set_x86_64_reg!(set_r8, r8);
 set_x86_64_reg!(set_r9, r9);
 set_x86_64_reg!(set_r10, r10);

@@ -12,7 +12,8 @@ use crate::layout::{
 use crate::{EntryPoint, GuestMemoryMmap};
 use hypervisor::arch::x86::gdt::{gdt_entry, segment_from_gdt};
 use hypervisor::arch::x86::regs::CR0_PE;
-use hypervisor::arch::x86::{FpuState, SpecialRegisters, StandardRegisters};
+use hypervisor::arch::x86::{FpuState, SpecialRegisters};
+use hypervisor::{HypervisorType, StandardRegisters};
 use std::sync::Arc;
 use std::{mem, result};
 use vm_memory::{Address, Bytes, GuestMemory, GuestMemoryError};
@@ -80,23 +81,33 @@ pub fn setup_msrs(vcpu: &Arc<dyn hypervisor::Vcpu>) -> Result<()> {
 ///
 /// * `vcpu` - Structure for the VCPU that holds the VCPU's fd.
 /// * `entry_point` - Description of the boot entry to set up.
-pub fn setup_regs(vcpu: &Arc<dyn hypervisor::Vcpu>, entry_point: EntryPoint) -> Result<()> {
-    let regs = match entry_point.setup_header {
-        None => StandardRegisters {
-            rflags: 0x0000000000000002u64,
-            rip: entry_point.entry_addr.raw_value(),
-            rbx: PVH_INFO_START.raw_value(),
-            ..Default::default()
-        },
-        Some(_) => StandardRegisters {
-            rflags: 0x0000000000000002u64,
-            rip: entry_point.entry_addr.raw_value(),
-            rsp: BOOT_STACK_POINTER.raw_value(),
-            rsi: ZERO_PAGE_START.raw_value(),
-            ..Default::default()
-        },
+pub fn setup_regs(
+    vcpu: &Arc<dyn hypervisor::Vcpu>,
+    entry_point: EntryPoint,
+    hypervisor_type: HypervisorType,
+) -> Result<()> {
+    let mut standard_regs = match hypervisor_type {
+        #[cfg(feature = "kvm")]
+        HypervisorType::Kvm => StandardRegisters::get_default_kvm(),
+        #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+        HypervisorType::Mshv => StandardRegisters::get_default_mshv(),
     };
-    vcpu.set_regs(&regs).map_err(Error::SetBaseRegisters)
+
+    match entry_point.setup_header {
+        None => {
+            standard_regs.set_rflags(0x0000000000000002u64);
+            standard_regs.set_rip(entry_point.entry_addr.raw_value());
+            standard_regs.set_rbx(PVH_INFO_START.raw_value())
+        }
+        Some(_) => {
+            standard_regs.set_rflags(0x0000000000000002u64);
+            standard_regs.set_rip(entry_point.entry_addr.raw_value());
+            standard_regs.set_rsp(BOOT_STACK_POINTER.raw_value());
+            standard_regs.set_rsi(ZERO_PAGE_START.raw_value());
+        }
+    };
+    vcpu.set_regs(&standard_regs)
+        .map_err(Error::SetBaseRegisters)
 }
 
 /// Configures the segment registers and system page tables for a given CPU.

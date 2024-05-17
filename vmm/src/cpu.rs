@@ -370,6 +370,7 @@ impl Vcpu {
     /// * `cpuid` - (x86_64) CpuId, wrapper over the `kvm_cpuid2` structure.
     pub fn configure(
         &mut self,
+        hypervisor_type: HypervisorType,
         #[cfg(target_arch = "aarch64")] vm: &Arc<dyn hypervisor::Vm>,
         boot_setup: Option<(EntryPoint, &GuestMemoryAtomic<GuestMemoryMmap>)>,
         #[cfg(target_arch = "x86_64")] cpuid: Vec<CpuIdEntry>,
@@ -392,6 +393,7 @@ impl Vcpu {
             kvm_hyperv,
             self.vendor,
             topology,
+            hypervisor_type,
         )
         .map_err(Error::VcpuConfiguration)?;
 
@@ -857,6 +859,7 @@ impl CpuManager {
         );
         #[cfg(target_arch = "x86_64")]
         vcpu.configure(
+            self.hypervisor.hypervisor_type(),
             boot_setup,
             self.cpuid.clone(),
             self.config.kvm_hyperv,
@@ -864,7 +867,7 @@ impl CpuManager {
         )?;
 
         #[cfg(target_arch = "aarch64")]
-        vcpu.configure(&self.vm, boot_setup)?;
+        vcpu.configure(self.hypervisor.hypervisor_type(), &self.vm, boot_setup)?;
 
         Ok(())
     }

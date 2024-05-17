@@ -44,13 +44,12 @@ use vmm_sys_util::eventfd::EventFd;
 pub mod x86_64;
 #[cfg(target_arch = "x86_64")]
 use crate::arch::x86::{
-    CpuIdEntry, FpuState, LapicState, MsrEntry, SpecialRegisters, StandardRegisters, XsaveState,
-    NUM_IOAPIC_PINS,
+    CpuIdEntry, FpuState, LapicState, MsrEntry, SpecialRegisters, XsaveState, NUM_IOAPIC_PINS,
 };
 #[cfg(target_arch = "x86_64")]
 use crate::ClockData;
 use crate::{
-    CpuState, IoEventAddress, IrqRoutingEntry, MpState, UserMemoryRegion,
+    CpuState, IoEventAddress, IrqRoutingEntry, MpState, StandardRegisters, UserMemoryRegion,
     USER_MEMORY_REGION_LOG_DIRTY, USER_MEMORY_REGION_READ, USER_MEMORY_REGION_WRITE,
 };
 #[cfg(target_arch = "aarch64")]
@@ -1195,13 +1194,13 @@ impl cpu::Vcpu for KvmVcpu {
     /// Returns the vCPU general purpose registers.
     ///
     fn get_regs(&self) -> cpu::Result<StandardRegisters> {
-        Ok(self
-            .fd
-            .lock()
-            .unwrap()
-            .get_regs()
-            .map_err(|e| cpu::HypervisorCpuError::GetStandardRegs(e.into()))?
-            .into())
+        Ok(StandardRegisters::Kvm(
+            self.fd
+                .lock()
+                .unwrap()
+                .get_regs()
+                .map_err(|e| cpu::HypervisorCpuError::GetStandardRegs(e.into()))?,
+        ))
     }
 
     ///
@@ -1334,11 +1333,10 @@ impl cpu::Vcpu for KvmVcpu {
     /// Sets the vCPU general purpose registers using the `KVM_SET_REGS` ioctl.
     ///
     fn set_regs(&self, regs: &StandardRegisters) -> cpu::Result<()> {
-        let regs = (*regs).into();
         self.fd
             .lock()
             .unwrap()
-            .set_regs(&regs)
+            .set_regs(&regs.kvm())
             .map_err(|e| cpu::HypervisorCpuError::SetStandardRegs(e.into()))
     }
 
@@ -2076,7 +2074,7 @@ impl cpu::Vcpu for KvmVcpu {
             cpuid,
             msrs,
             vcpu_events,
-            regs: regs.into(),
+            regs: regs.kvm(),
             sregs: sregs.into(),
             fpu,
             lapic_state,
@@ -2184,7 +2182,7 @@ impl cpu::Vcpu for KvmVcpu {
         let state: VcpuKvmState = state.clone().into();
         self.set_cpuid2(&state.cpuid)?;
         self.set_mp_state(state.mp_state.into())?;
-        self.set_regs(&state.regs.into())?;
+        self.set_regs(&StandardRegisters::Kvm(state.regs))?;
         self.set_sregs(&state.sregs.into())?;
         self.set_xsave(&state.xsave)?;
         self.set_xcrs(&state.xcrs)?;

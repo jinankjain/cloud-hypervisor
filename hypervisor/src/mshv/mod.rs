@@ -405,22 +405,19 @@ impl cpu::Vcpu for MshvVcpu {
     ///
     /// Returns the vCPU general purpose registers.
     ///
-    fn get_regs(&self) -> cpu::Result<crate::arch::x86::StandardRegisters> {
-        Ok(self
-            .fd
-            .get_regs()
-            .map_err(|e| cpu::HypervisorCpuError::GetStandardRegs(e.into()))?
-            .into())
+    fn get_regs(&self) -> cpu::Result<crate::StandardRegisters> {
+        Ok(crate::StandardRegisters::Mshv(self.fd.get_regs().map_err(
+            |e| cpu::HypervisorCpuError::GetStandardRegs(e.into()),
+        )?))
     }
 
     #[cfg(target_arch = "x86_64")]
     ///
     /// Sets the vCPU general purpose registers.
     ///
-    fn set_regs(&self, regs: &crate::arch::x86::StandardRegisters) -> cpu::Result<()> {
-        let regs = (*regs).into();
+    fn set_regs(&self, regs: &crate::StandardRegisters) -> cpu::Result<()> {
         self.fd
-            .set_regs(&regs)
+            .set_regs(&regs.mshv())
             .map_err(|e| cpu::HypervisorCpuError::SetStandardRegs(e.into()))
     }
 
@@ -1302,7 +1299,7 @@ impl cpu::Vcpu for MshvVcpu {
         let mut state: VcpuMshvState = state.clone().into();
         self.set_msrs(&state.msrs)?;
         self.set_vcpu_events(&state.vcpu_events)?;
-        self.set_regs(&state.regs.into())?;
+        self.set_regs(&crate::StandardRegisters::Mshv(state.regs))?;
         self.set_sregs(&state.sregs.into())?;
         self.set_fpu(&state.fpu)?;
         self.set_xcrs(&state.xcrs)?;
@@ -1358,7 +1355,7 @@ impl cpu::Vcpu for MshvVcpu {
         Ok(VcpuMshvState {
             msrs,
             vcpu_events,
-            regs: regs.into(),
+            regs: regs.mshv(),
             sregs: sregs.into(),
             fpu,
             xcrs,
