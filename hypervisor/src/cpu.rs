@@ -9,7 +9,7 @@
 //
 
 #[cfg(target_arch = "aarch64")]
-use crate::aarch64::{RegList, StandardRegisters, VcpuInit};
+use crate::aarch64::{RegList, VcpuInit};
 #[cfg(target_arch = "x86_64")]
 use crate::arch::x86::{CpuIdEntry, FpuState, LapicState, MsrEntry, SpecialRegisters};
 #[cfg(feature = "tdx")]

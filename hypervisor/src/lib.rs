@@ -199,10 +199,8 @@ pub enum StandardRegisters {
 impl StandardRegisters {
     #[cfg(feature = "kvm")]
     fn kvm(self) -> kvm_bindings::kvm_regs {
-        if let StandardRegisters::Kvm(s) = self {
-            s
-        } else {
-            panic!("Unwrapping kvm_regs failed!")
+        match self {
+            StandardRegisters::Kvm(s) => s,
         }
     }
 
@@ -220,10 +218,8 @@ impl StandardRegisters {
 
     #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
     fn mshv(self) -> mshv_bindings::StandardRegisters {
-        if let StandardRegisters::Mshv(s) = self {
-            s
-        } else {
-            panic!("Unwrapping mshv standard register failed!")
+        match self {
+            StandardRegisters::Mshv(s) => s,
         }
     }
 }
