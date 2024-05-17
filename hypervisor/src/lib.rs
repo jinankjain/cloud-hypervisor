@@ -188,7 +188,7 @@ pub enum IrqRoutingEntry {
     Mshv(mshv_bindings::mshv_msi_routing_entry),
 }
 
-#[derive(Debug, Clone, Copy, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, serde::Serialize, serde::Deserialize)]
 pub enum StandardRegisters {
     #[cfg(feature = "kvm")]
     Kvm(kvm_bindings::kvm_regs),

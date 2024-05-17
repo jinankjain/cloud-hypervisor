@@ -2744,7 +2744,8 @@ mod tests {
     use arch::layout::ZERO_PAGE_START;
     use arch::x86_64::interrupts::*;
     use arch::x86_64::regs::*;
-    use hypervisor::arch::x86::{FpuState, LapicState, StandardRegisters};
+    use hypervisor::arch::x86::{FpuState, LapicState};
+    use hypervisor::StandardRegisters;
     use linux_loader::loader::bootparam::setup_header;
 
     #[test]
@@ -2829,19 +2830,18 @@ mod tests {
         let vm = hv.create_vm().expect("new VM fd creation failed");
         let vcpu = vm.create_vcpu(0, None).unwrap();
 
-        let expected_regs: StandardRegisters = StandardRegisters {
-            rflags: 0x0000000000000002u64,
-            rbx: arch::layout::PVH_INFO_START.0,
-            rip: 1,
-            ..Default::default()
-        };
+        let mut expected_regs = StandardRegisters::get_default_kvm();
+        expected_regs.set_rflags(0x0000000000000002u64);
+        expected_regs.set_rbx(arch::layout::PVH_INFO_START.0);
+        expected_regs.set_rip(1);
 
         setup_regs(
             &vcpu,
             arch::EntryPoint {
-                entry_addr: vm_memory::GuestAddress(expected_regs.rip),
+                entry_addr: vm_memory::GuestAddress(expected_regs.get_rip()),
                 setup_header: None,
             },
+            hypervisor::HypervisorType::Kvm,
         )
         .unwrap();
 
@@ -2855,22 +2855,21 @@ mod tests {
         let vm = hv.create_vm().expect("new VM fd creation failed");
         let vcpu = vm.create_vcpu(0, None).unwrap();
 
-        let expected_regs: StandardRegisters = StandardRegisters {
-            rflags: 0x0000000000000002u64,
-            rip: 1,
-            rsp: BOOT_STACK_POINTER.0,
-            rsi: ZERO_PAGE_START.0,
-            ..Default::default()
-        };
+        let mut expected_regs = StandardRegisters::get_default_kvm();
+        expected_regs.set_rflags(0x0000000000000002u64);
+        expected_regs.set_rsp(BOOT_STACK_POINTER.0);
+        expected_regs.set_rsi(ZERO_PAGE_START.0);
+        expected_regs.set_rip(1);
 
         setup_regs(
             &vcpu,
             arch::EntryPoint {
-                entry_addr: vm_memory::GuestAddress(expected_regs.rip),
+                entry_addr: vm_memory::GuestAddress(expected_regs.get_rip()),
                 setup_header: Some(setup_header {
                     ..Default::default()
                 }),
             },
+            hypervisor::HypervisorType::Kvm,
         )
         .unwrap();
 
