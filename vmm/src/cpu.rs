@@ -847,11 +847,7 @@ impl CpuManager {
         #[cfg(target_arch = "x86_64")]
         let topology = self.config.topology.clone().map_or_else(
             || {
-                #[cfg(feature = "mshv")]
-                if matches!(self.hypervisor.hypervisor_type(), HypervisorType::Mshv) {
-                    return Some((1, self.boot_vcpus(), 1));
-                }
-                None
+                return Some((1, self.boot_vcpus(), 1));
             },
             |t| Some((t.threads_per_core, t.cores_per_die, t.dies_per_package)),
         );
