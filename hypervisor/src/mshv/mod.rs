@@ -190,13 +190,13 @@ impl From<CpuState> for VcpuMshvState {
     }
 }
 
-impl From<mshv_msi_routing_entry> for IrqRoutingEntry {
-    fn from(s: mshv_msi_routing_entry) -> Self {
+impl From<mshv_irq_routing_entry> for IrqRoutingEntry {
+    fn from(s: mshv_irq_routing_entry) -> Self {
         IrqRoutingEntry::Mshv(s)
     }
 }
 
-impl From<IrqRoutingEntry> for mshv_msi_routing_entry {
+impl From<IrqRoutingEntry> for mshv_irq_routing_entry {
     fn from(e: IrqRoutingEntry) -> Self {
         match e {
             IrqRoutingEntry::Mshv(e) => e,
@@ -1922,13 +1922,19 @@ impl vm::Vm for MshvVm {
     ///
     fn make_routing_entry(&self, gsi: u32, config: &InterruptSourceConfig) -> IrqRoutingEntry {
         match config {
-            InterruptSourceConfig::MsiIrq(cfg) => mshv_msi_routing_entry {
-                gsi,
-                address_lo: cfg.low_addr,
-                address_hi: cfg.high_addr,
-                data: cfg.data,
+            InterruptSourceConfig::MsiIrq(cfg) => {
+                let mut mshv_route = mshv_irq_routing_entry {
+                    gsi,
+                    type_: MSHV_IRQ_ROUTING_MSI,
+                    ..Default::default()
+                };
+
+                mshv_route.u.msi.address_lo = cfg.low_addr;
+                mshv_route.u.msi.address_hi = cfg.high_addr;
+                mshv_route.u.msi.data = cfg.data;
+
+                mshv_route.into()
             }
-            .into(),
             _ => {
                 unreachable!()
             }
@@ -1937,10 +1943,10 @@ impl vm::Vm for MshvVm {
 
     fn set_gsi_routing(&self, entries: &[IrqRoutingEntry]) -> vm::Result<()> {
         let mut msi_routing =
-            vec_with_array_field::<mshv_msi_routing, mshv_msi_routing_entry>(entries.len());
+            vec_with_array_field::<mshv_irq_routing, mshv_irq_routing_entry>(entries.len());
         msi_routing[0].nr = entries.len() as u32;
 
-        let entries: Vec<mshv_msi_routing_entry> = entries
+        let entries: Vec<mshv_irq_routing_entry> = entries
             .iter()
             .map(|entry| match entry {
                 IrqRoutingEntry::Mshv(e) => *e,
@@ -1953,13 +1959,13 @@ impl vm::Vm for MshvVm {
         // entries_slice with entries.len() again. It is guaranteed to be large enough to hold
         // everything from entries.
         unsafe {
-            let entries_slice: &mut [mshv_msi_routing_entry] =
+            let entries_slice: &mut [mshv_irq_routing_entry] =
                 msi_routing[0].entries.as_mut_slice(entries.len());
             entries_slice.copy_from_slice(&entries);
         }
 
         self.fd
-            .set_msi_routing(&msi_routing[0])
+            .set_gsi_routing(&msi_routing[0])
             .map_err(|e| vm::HypervisorVmError::SetGsiRouting(e.into()))
     }
 
