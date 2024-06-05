@@ -1935,8 +1935,16 @@ impl vm::Vm for MshvVm {
 
                 mshv_route.into()
             }
-            _ => {
-                unreachable!()
+            InterruptSourceConfig::LegacyIrq(cfg) => {
+                let mut mshv_route = mshv_irq_routing_entry {
+                    gsi,
+                    type_: MSHV_IRQ_ROUTING_IRQCHIP,
+                    ..Default::default()
+                };
+                mshv_route.u.irqchip.irqchip = cfg.irqchip;
+                mshv_route.u.irqchip.pin = cfg.pin;
+
+                mshv_route.into()
             }
         }
     }
