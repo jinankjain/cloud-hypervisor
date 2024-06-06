@@ -270,7 +270,7 @@ impl hypervisor::Hypervisor for MshvHypervisor {
 
     #[cfg(target_arch = "aarch64")]
     fn get_host_ipa_limit(&self) -> i32 {
-        unimplemented!()
+        40
     }
 
     fn create_vm_with_type(&self, vm_type: u64) -> hypervisor::Result<Arc<dyn crate::Vm>> {
