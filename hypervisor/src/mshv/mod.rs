@@ -71,6 +71,9 @@ pub mod aarch64;
 #[cfg(target_arch = "aarch64")]
 pub use aarch64::VcpuMshvState;
 
+#[cfg(target_arch = "aarch64")]
+use crate::mshv::aarch64::gic::MshvGicV3Its;
+
 const DIRTY_BITMAP_CLEAR_DIRTY: u64 = 0x4;
 const DIRTY_BITMAP_SET_DIRTY: u64 = 0x8;
 
@@ -2140,8 +2143,11 @@ impl vm::Vm for MshvVm {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn create_vgic(&self, _config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
-        unimplemented!()
+    fn create_vgic(&self, config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
+        let gic_device = MshvGicV3Its::new(self, config)
+            .map_err(|e| vm::HypervisorVmError::CreateVgic(anyhow!("Vgic error {:?}", e)))?;
+
+        Ok(Arc::new(Mutex::new(gic_device)))
     }
 
     #[cfg(target_arch = "aarch64")]

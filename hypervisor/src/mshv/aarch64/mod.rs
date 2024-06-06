@@ -2,5 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod gic;
+
 #[derive(Clone, Serialize, Deserialize)]
 pub struct VcpuMshvState {}
