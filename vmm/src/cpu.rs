@@ -419,24 +419,28 @@ impl Vcpu {
     pub fn init(&self, vm: &Arc<dyn hypervisor::Vm>) -> Result<()> {
         let mut kvi = VcpuInit::default();
 
-        // This reads back the kernel's preferred target type.
-        vm.get_preferred_target(&mut kvi)
-            .map_err(Error::VcpuArmPreferredTarget)?;
-        // We already checked that the capability is supported.
-        kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_PSCI_0_2;
-        if vm
-            .as_any()
-            .downcast_ref::<hypervisor::kvm::KvmVm>()
-            .unwrap()
-            .check_extension(Cap::ArmPmuV3)
+        #[cfg(feature = "kvm")]
         {
-            kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_PMU_V3;
+            // This reads back the kernel's preferred target type.
+            //    vm.get_preferred_target(&mut kvi)
+            //        .map_err(Error::VcpuArmPreferredTarget)?;
+            //    // We already checked that the capability is supported.
+            //    kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_PSCI_0_2;
+            //    if vm
+            //        .as_any()
+            //        .downcast_ref::<hypervisor::kvm::KvmVm>()
+            //        .unwrap()
+            //        .check_extension(Cap::ArmPmuV3)
+            //    {
+            //        kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_PMU_V3;
+            //    }
+            //    // Non-boot cpus are powered off initially.
+            //    if self.id > 0 {
+            //        kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_POWER_OFF;
+            //    }
+            //    self.vcpu.vcpu_init(&kvi).map_err(Error::VcpuArmInit)
         }
-        // Non-boot cpus are powered off initially.
-        if self.id > 0 {
-            kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_POWER_OFF;
-        }
-        self.vcpu.vcpu_init(&kvi).map_err(Error::VcpuArmInit)
+        Ok(())
     }
 
     /// Runs the VCPU until it exits, returning the reason.

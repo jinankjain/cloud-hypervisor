@@ -16,8 +16,9 @@ use crate::vm::{self, InterruptSourceConfig, VmOps};
 use crate::HypervisorType;
 use iced_x86::Register;
 use mshv_bindings::*;
+use mshv_ioctls::set_registers_64;
 #[cfg(target_arch = "x86_64")]
-use mshv_ioctls::{set_registers_64, InterruptRequest};
+use mshv_ioctls::InterruptRequest;
 use mshv_ioctls::{Mshv, NoDatamatch, VcpuFd, VmFd, VmType};
 use std::any::Any;
 use std::collections::HashMap;
@@ -1242,17 +1243,43 @@ impl cpu::Vcpu for MshvVcpu {
 
     #[cfg(target_arch = "aarch64")]
     fn has_pmu_support(&self) -> bool {
-        unimplemented!()
+        false
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn setup_regs(&self, _cpu_id: u8, _boot_ip: u64, _fdt_start: u64) -> cpu::Result<()> {
-        unimplemented!()
+    fn setup_regs(&self, cpu_id: u8, boot_ip: u64, fdt_start: u64) -> cpu::Result<()> {
+        let arr_reg_name_value = [(hv_register_name_HV_ARM64_REGISTER_PSTATE, 0x3c5)];
+        set_registers_64!(self.fd, arr_reg_name_value)
+            .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
+
+        if cpu_id == 0 {
+            let arr_reg_name_value = [
+                (hv_register_name_HV_ARM64_REGISTER_PC, boot_ip),
+                (hv_register_name_HV_ARM64_REGISTER_X0, fdt_start),
+            ];
+            set_registers_64!(self.fd, arr_reg_name_value)
+                .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
+        }
+
+        Ok(())
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn get_sys_reg(&self, _sys_reg: u32) -> cpu::Result<u64> {
-        unimplemented!()
+    fn get_sys_reg(&self, sys_reg: u32) -> cpu::Result<u64> {
+        match sys_reg {
+            3575120032 => {
+                let mut reg_assocs = [hv_register_assoc {
+                    name: hv_register_name_HV_ARM64_REGISTER_MPIDR_EL1,
+                    ..Default::default()
+                }];
+                self.fd.get_reg(&mut reg_assocs).unwrap();
+                let res = unsafe { reg_assocs[0].value.reg64 };
+                return Ok(res);
+            }
+            _ => {
+                panic!("Unsupported sysreg {:?}", sys_reg);
+            }
+        }
     }
 
     #[cfg(target_arch = "aarch64")]
