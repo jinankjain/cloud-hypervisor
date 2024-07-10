@@ -328,6 +328,18 @@ impl hypervisor::Hypervisor for MshvHypervisor {
             }
         }
 
+        //fd.set_partition_property(
+        //    hv_partition_property_code_HV_PARTITION_PROPERTY_GICD_BASE_ADDRESS,
+        //    150929408,
+        //)
+        //.map_err(|e| hypervisor::HypervisorError::SetPartitionProperty(e.into()))?;
+
+        //fd.set_partition_property(
+        //    hv_partition_property_code_HV_PARTITION_PROPERTY_GITS_TRANSLATER_BASE_ADDRESS,
+        //    150667264,
+        //)
+        //.map_err(|e| hypervisor::HypervisorError::SetPartitionProperty(e.into()))?;
+
         // Default Microsoft Hypervisor behavior for unimplemented MSR is to
         // send a fault to the guest if it tries to access it. It is possible
         // to override this behavior with a more suitable option i.e., ignore
@@ -663,6 +675,15 @@ impl cpu::Vcpu for MshvVcpu {
                     set_registers_64!(self.fd, arr_reg_name_value)
                         .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
                     Ok(cpu::VmExit::Ignore)
+                }
+                hv_message_type_HVMSG_UNMAPPED_GPA => {
+                    let info = x.to_memory_info().unwrap();
+                    let insn_len = info.instruction_byte_count as usize;
+                    let gva = info.guest_virtual_address;
+                    let gpa = info.guest_physical_address;
+
+                    println!("GVA: {} GPA: {}, insn_ken: {}", gva, gpa, insn_len);
+                    panic!("GOT A VMEXITTTTTTTTTTT");
                 }
                 #[cfg(target_arch = "x86_64")]
                 msg_type @ (hv_message_type_HVMSG_UNMAPPED_GPA
@@ -1255,6 +1276,7 @@ impl cpu::Vcpu for MshvVcpu {
         if cpu_id == 0 {
             let arr_reg_name_value = [
                 (hv_register_name_HV_ARM64_REGISTER_PC, boot_ip),
+                (hv_register_name_HV_ARM64_REGISTER_GICR_BASE_GPA, 150798336),
                 (hv_register_name_HV_ARM64_REGISTER_X0, fdt_start),
             ];
             set_registers_64!(self.fd, arr_reg_name_value)
@@ -1274,6 +1296,7 @@ impl cpu::Vcpu for MshvVcpu {
                 }];
                 self.fd.get_reg(&mut reg_assocs).unwrap();
                 let res = unsafe { reg_assocs[0].value.reg64 };
+                info!("Value of mpidr_el1: {:?}", res);
                 return Ok(res);
             }
             _ => {
@@ -2171,6 +2194,7 @@ impl vm::Vm for MshvVm {
 
     #[cfg(target_arch = "aarch64")]
     fn create_vgic(&self, config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
+        info!("{:?}", config.redists_addr);
         let gic_device = MshvGicV3Its::new(self, config)
             .map_err(|e| vm::HypervisorVmError::CreateVgic(anyhow!("Vgic error {:?}", e)))?;
 
