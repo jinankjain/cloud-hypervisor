@@ -296,9 +296,20 @@ dependencies = [
 
 [[package]]
 name = "bitfield-struct"
-version = "0.5.6"
+version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a26b8cea8bb6a81b75a84603b9e096f05fa86db057904ef29be1deee900532bd"
+checksum = "6c2ce686adbebce0ee484a502c440b4657739adbad65eadf06d64f5816ee9765"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
+]
+
+[[package]]
+name = "bitfield-struct"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "de05f8756f1c68937349406d4632ae96ae35901019b5e59c508d9c38c64715fb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -979,6 +990,7 @@ name = "hypervisor"
 version = "0.1.0"
 dependencies = [
  "anyhow",
+ "bitfield-struct 0.8.0",
  "byteorder",
  "env_logger",
  "iced-x86",
@@ -990,12 +1002,14 @@ dependencies = [
  "log",
  "mshv-bindings",
  "mshv-ioctls",
+ "open-enum 0.4.0",
  "serde",
  "serde_with",
  "thiserror",
  "vfio-ioctls",
  "vm-memory",
  "vmm-sys-util",
+ "zerocopy",
 ]
 
 [[package]]
@@ -1015,15 +1029,15 @@ checksum = "b9e0384b61958566e926dc50660321d12159025e767c18e043daf26b70104c39"
 
 [[package]]
 name = "igvm"
-version = "0.3.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2bc8970c7e36437c52af3b3ef1acaa5e334c2a95cd8ee9639d574830f48af17e"
+checksum = "7984b10433b50e06a06bd50c69bca4888a5d7de8975f64ea4c2a7687eb99b09d"
 dependencies = [
- "bitfield-struct",
+ "bitfield-struct 0.7.0",
  "crc32fast",
  "hex",
  "igvm_defs",
- "open-enum",
+ "open-enum 0.5.2",
  "range_map_vec",
  "thiserror",
  "tracing",
@@ -1032,12 +1046,12 @@ dependencies = [
 
 [[package]]
 name = "igvm_defs"
-version = "0.3.1"
+version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2c4942827cef415726296f6d62411afdb13c1b1924125f3222988f04bef33ad2"
+checksum = "b64ec5588c475372ae830475d3ee9a7bd255407dcb9f03faf6d493556eb6105a"
 dependencies = [
- "bitfield-struct",
- "open-enum",
+ "bitfield-struct 0.7.0",
+ "open-enum 0.5.2",
  "static_assertions",
  "zerocopy",
 ]
@@ -1379,22 +1393,42 @@ checksum = "3fdb12b2476b595f9358c5161aa467c2438859caa136dec86c26fdd2efe17b92"
 
 [[package]]
 name = "open-enum"
-version = "0.4.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ba485b94b3e73fa752d98cfcab74647a4a537269682cc1ee5256aa020432506d"
+checksum = "7304d4cd87d01fc53598581ba440ba808e799be6b3e9481e5d5b41a23d25c690"
 dependencies = [
- "open-enum-derive",
+ "open-enum-derive 0.4.0",
+]
+
+[[package]]
+name = "open-enum"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2eb2508143a400b3361812094d987dd5adc81f0f5294a46491be648d6c94cab5"
+dependencies = [
+ "open-enum-derive 0.5.2",
 ]
 
 [[package]]
 name = "open-enum-derive"
-version = "0.4.1"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fed1c261430059cab8b2b51eec42a3c15750439ec6c013cd8fe41d4a450de776"
+checksum = "582fa02926ea0072bfda824e69fb5afa1317ce7d691f8c2da07ea5bd772a9a75"
 dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "open-enum-derive"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8d1296fab5231654a5aec8bf9e87ba4e3938c502fc4c3c0425a00084c78944be"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.66",
 ]
 
 [[package]]

@@ -2,6 +2,7 @@
 
 use serde::{Deserialize, Serialize};
 
+pub mod emulator;
 pub mod gic;
 
 #[derive(Clone, Serialize, Deserialize)]

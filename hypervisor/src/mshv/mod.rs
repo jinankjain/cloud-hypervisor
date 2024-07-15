@@ -45,6 +45,9 @@ pub use x86_64::*;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{emulator, VcpuMshvState};
 
+#[cfg(target_arch = "aarch64")]
+pub use aarch64::emulator;
+
 #[cfg(target_arch = "x86_64")]
 use std::fs::File;
 use std::os::unix::io::AsRawFd;
@@ -677,8 +680,20 @@ impl cpu::Vcpu for MshvVcpu {
                     let gva = info.guest_virtual_address;
                     let gpa = info.guest_physical_address;
 
-                    println!("GVA: {} GPA: {}, insn_ken: {}", gva, gpa, insn_len);
-                    panic!("GOT A VMEXITTTTTTTTTTT");
+                    let mut context = emulator::MshvEmulatorContext {
+                        vcpu: self,
+                        map: (gva, gpa),
+                        syndrome: info.syndrome,
+                        instruction_bytes: info.instruction_bytes,
+                        instruction_byte_count: info.instruction_byte_count,
+                        interruption_pending: unsafe { info.header.execution_state.__bindgen_anon_1.interruption_pending() != 0 },
+                        pc: info.header.pc
+                    };
+
+                    let mut emulator = emulator::Emulator::new(context);
+                    emulator.emulate();
+
+                    Ok(cpu::VmExit::Ignore)
                 }
                 #[cfg(target_arch = "x86_64")]
                 msg_type @ (hv_message_type_HVMSG_UNMAPPED_GPA
@@ -692,7 +707,7 @@ impl cpu::Vcpu for MshvVcpu {
 
                     let mut context = MshvEmulatorContext {
                         vcpu: self,
-                        map: (gva, gpa),
+                        map: (gva, gpa)
                     };
 
                     // Create a new emulator.
@@ -1547,6 +1562,273 @@ impl cpu::Vcpu for MshvVcpu {
 }
 
 impl MshvVcpu {
+    fn pc(&self) -> u64 {
+        let mut reg_assocs = [hv_register_assoc {
+            name: hv_register_name_HV_ARM64_REGISTER_PC,
+            ..Default::default()
+        }];
+        self.fd.get_reg(&mut reg_assocs).unwrap();
+        // SAFETY: Accessing a union element from bindgen generated bindings.
+        let reg = unsafe { reg_assocs[0].value.reg64 };
+        return reg;
+    }
+
+    fn x(&self, index: u8) -> u64 {
+        assert!(index < 31);
+        if index == 18 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X18,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 1 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X1,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 0 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X0,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 5 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X5,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 23 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X23,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 2 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X2,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 3 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X3,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 11 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X11,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 4 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X4,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 6 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X6,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 7 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X7,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 8 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X8,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 21 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X21,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 22 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X22,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 20 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X20,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 19 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X19,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 28 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X28,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else if index == 24 {
+            let mut reg_assocs = [hv_register_assoc {
+                name: hv_register_name_HV_ARM64_REGISTER_X24,
+                ..Default::default()
+            }];
+            self.fd.get_reg(&mut reg_assocs).unwrap();
+            // SAFETY: Accessing a union element from bindgen generated bindings.
+            let reg = unsafe { reg_assocs[0].value.reg64 };
+            return reg;
+        } else {
+            panic!("Unknown reg: {}", index);
+        }
+
+
+        0
+    }
+
+    fn set_pc(&self, val: u64) {
+        let mut reg_assocs = [(
+            hv_register_name_HV_ARM64_REGISTER_PC,
+            val
+        )];
+        set_registers_64!(self.fd, &reg_assocs).unwrap();
+    }
+
+    fn set_x(&self, index: u8, val: u64) {
+        assert!(index < 31);
+        if index == 18 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X18,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap();
+        } else if index == 1 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X1,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 0 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X0,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 2 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X2,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 5 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X5,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 23 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X23,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 11 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X11,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 8 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X8,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 3 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X3,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 28 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X28,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else if index == 24 {
+            let mut reg_assocs = [(
+                hv_register_name_HV_ARM64_REGISTER_X24,
+                val
+            )];
+            set_registers_64!(self.fd, &reg_assocs).unwrap()
+        } else {
+            panic!("Unknown reg: {}", index);
+        }
+
+
+
+    }
+
     #[cfg(target_arch = "x86_64")]
     ///
     /// X86 specific call that returns the vcpu's current "xcrs".
