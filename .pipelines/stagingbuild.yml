@@ -46,7 +46,7 @@ variables:
   - name: DEFAULT_BRANCH
     value: msft-main
   - name: RUST_VERSION
-    value: "1.75.0"
+    value: "1.77.0"
   - name: test_project
     value: "Cloud-Hypervisor Test"
   - name: enable_publish
