@@ -693,6 +693,7 @@ fn create_vcpu_ioctl_seccomp_rule_kvm() -> Result<Vec<SeccompRule>, BackendError
 fn create_vcpu_ioctl_seccomp_rule_mshv() -> Result<Vec<SeccompRule>, BackendError> {
     Ok(or![
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_SET_MSI_ROUTING())?],
+        and![Cond::new(1, ArgLen::Dword, Eq, MSHV_ASSERT_INTERRUPT())?],
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_IOEVENTFD())?],
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_IRQFD())?],
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_RUN_VP())?],
