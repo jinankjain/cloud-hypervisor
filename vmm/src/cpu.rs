@@ -454,7 +454,7 @@ impl Vcpu {
         if self.id > 0 {
             kvi.features[0] |= 1 << kvm_bindings::KVM_ARM_VCPU_POWER_OFF;
         }
-        self.vcpu.vcpu_init(&kvi).map_err(Error::VcpuArmInit)?;
+        self.vcpu.vcpu_init(&kvi.into()).map_err(Error::VcpuArmInit)?;
         if sve_supported {
             self.vcpu
                 .vcpu_finalize(kvm_bindings::KVM_ARM_VCPU_SVE as i32)
