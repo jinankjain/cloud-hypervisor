@@ -369,6 +369,25 @@ impl From<crate::Register> for kvm_bindings::kvm_one_reg {
     }
 }
 
+#[cfg(target_arch = "aarch64")]
+impl From<kvm_bindings::kvm_vcpu_init> for crate::VcpuInit {
+    fn from(s: kvm_bindings::kvm_vcpu_init) -> Self {
+        crate::VcpuInit::Kvm(s)
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+impl From<crate::VcpuInit> for kvm_bindings::kvm_vcpu_init {
+    fn from(e: crate::VcpuInit) -> Self {
+        match e {
+            crate::VcpuInit::Kvm(e) => e,
+            /* Needed in case other hypervisors are enabled */
+            #[allow(unreachable_patterns)]
+            _ => panic!("VcpuInit is not valid"),
+        }
+    }
+}
+
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 impl From<kvm_bindings::RegList> for crate::RegList {
     fn from(s: kvm_bindings::RegList) -> Self {
@@ -2637,11 +2656,12 @@ impl cpu::Vcpu for KvmVcpu {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn vcpu_init(&self, kvi: &VcpuInit) -> cpu::Result<()> {
+    fn vcpu_init(&self, kvi: &crate::VcpuInit) -> cpu::Result<()> {
+        let kvm_kvi: kvm_bindings::kvm_vcpu_init = (*kvi).into();
         self.fd
             .lock()
             .unwrap()
-            .vcpu_init(kvi)
+            .vcpu_init(&kvm_kvi)
             .map_err(|e| cpu::HypervisorCpuError::VcpuInit(e.into()))
     }
 
