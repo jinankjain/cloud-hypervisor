@@ -2921,3 +2921,11 @@ dependencies = [
  "quote",
  "syn",
 ]
+
+[[patch.unused]]
+name = "mshv-bindings"
+version = "0.3.2"
+
+[[patch.unused]]
+name = "mshv-ioctls"
+version = "0.3.2"
