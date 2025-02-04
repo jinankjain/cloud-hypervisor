@@ -29,6 +29,9 @@ mod snp_constants;
 // x86_64 dependencies
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
+// aarch64 dependencies
+#[cfg(target_arch = "aarch64")]
+pub mod aarch64;
 #[cfg(target_arch = "x86_64")]
 use std::fs::File;
 use std::os::unix::io::AsRawFd;
@@ -42,10 +45,13 @@ use vmm_sys_util::eventfd::EventFd;
 pub use x86_64::*;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{emulator, VcpuMshvState};
-#[cfg(target_arch = "aarch64")]
-use std::sync::Mutex;
+// aarch64 dependencies
 #[cfg(target_arch = "aarch64")]
 use crate::arch::aarch64::gic::{Vgic, VgicConfig};
+#[cfg(target_arch = "aarch64")]
+pub use aarch64::VcpuMshvState;
+#[cfg(target_arch = "aarch64")]
+use std::sync::Mutex;
 ///
 /// Export generically-named wrappers of mshv-bindings for Unix-based platforms
 ///
