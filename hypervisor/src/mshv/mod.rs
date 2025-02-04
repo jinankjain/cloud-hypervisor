@@ -42,6 +42,10 @@ use vmm_sys_util::eventfd::EventFd;
 pub use x86_64::*;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{emulator, VcpuMshvState};
+#[cfg(target_arch = "aarch64")]
+use std::sync::Mutex;
+#[cfg(target_arch = "aarch64")]
+use crate::arch::aarch64::gic::{Vgic, VgicConfig};
 ///
 /// Export generically-named wrappers of mshv-bindings for Unix-based platforms
 ///
