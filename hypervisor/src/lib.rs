@@ -36,7 +36,7 @@ pub mod arch;
 pub mod kvm;
 
 /// Microsoft Hypervisor implementation module
-#[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+#[cfg(feature = "mshv")]
 pub mod mshv;
 
 /// Hypervisor related module
@@ -148,7 +148,7 @@ pub const USER_MEMORY_REGION_ADJUSTABLE: u32 = 1 << 4;
 pub enum MpState {
     #[cfg(feature = "kvm")]
     Kvm(kvm_bindings::kvm_mp_state),
-    #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+    #[cfg(feature = "mshv")]
     Mshv, /* MSHV does not support MpState yet */
 }
 
@@ -163,7 +163,7 @@ pub enum IoEventAddress {
 pub enum CpuState {
     #[cfg(feature = "kvm")]
     Kvm(kvm::VcpuKvmState),
-    #[cfg(all(feature = "mshv", target_arch = "x86_64"))]
+    #[cfg(all(feature = "mshv"))]
     Mshv(mshv::VcpuMshvState),
 }
 
@@ -200,12 +200,17 @@ pub enum IrqRoutingEntry {
 pub enum VcpuInit {
     #[cfg(all(feature = "kvm", target_arch = "aarch64"))]
     Kvm(kvm_bindings::kvm_vcpu_init),
+    #[cfg(all(feature = "mshv", target_arch = "aarch64"))]
+    Mshv(mshv_bindings::MshvVcpuInit),
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum RegList {
     #[cfg(all(feature = "kvm", any(target_arch = "aarch64", target_arch = "riscv64")))]
     Kvm(kvm_bindings::RegList),
+    #[cfg(all(feature = "mshv", target_arch = "aarch64"))]
+    Mshv(mshv_bindings::MshvRegList),
+    
 }
 
 pub enum Register {
@@ -219,10 +224,7 @@ pub enum StandardRegisters {
     Kvm(kvm_bindings::kvm_regs),
     #[cfg(all(feature = "kvm", target_arch = "riscv64"))]
     Kvm(kvm_bindings::kvm_riscv_core),
-    #[cfg(all(
-        any(feature = "mshv", feature = "mshv_emulator"),
-        target_arch = "x86_64"
-    ))]
+    #[cfg(any(feature = "mshv", feature = "mshv_emulator"))]
     Mshv(mshv_bindings::StandardRegisters),
 }
 
@@ -309,6 +311,8 @@ macro_rules! set_aarch64_reg {
                     match self {
                         #[cfg(feature = "kvm")]
                         StandardRegisters::Kvm(s) => s.regs.$reg_name = val,
+                        #[cfg(feature = "mshv")]
+                        StandardRegisters::Mshv(s) => s.$reg_name = val,
                     }
                 }
             }
@@ -325,6 +329,8 @@ macro_rules! get_aarch64_reg {
                     match self {
                         #[cfg(feature = "kvm")]
                         StandardRegisters::Kvm(s) => s.regs.$reg_name,
+                        #[cfg(feature = "mshv")]
+                        StandardRegisters::Mshv(s) => s.$reg_name,
                     }
                 }
             }

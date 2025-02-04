@@ -29,6 +29,9 @@ mod snp_constants;
 // x86_64 dependencies
 #[cfg(target_arch = "x86_64")]
 pub mod x86_64;
+// aarch64 dependencies
+#[cfg(target_arch = "aarch64")]
+pub mod aarch64;
 #[cfg(target_arch = "x86_64")]
 use std::fs::File;
 use std::os::unix::io::AsRawFd;
@@ -38,10 +41,22 @@ use igvm_defs::IGVM_VHS_SNP_ID_BLOCK;
 #[cfg(feature = "sev_snp")]
 use snp_constants::*;
 use vmm_sys_util::eventfd::EventFd;
+// x86_64 dependencies
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::*;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{emulator, VcpuMshvState};
+// aarch64 dependencies
+#[cfg(target_arch = "aarch64")]
+pub use aarch64::VcpuMshvState;
+#[cfg(target_arch = "aarch64")]
+pub use aarch64::*;
+#[cfg(target_arch = "aarch64")]
+use crate::{RegList, VcpuInit};
+#[cfg(target_arch = "aarch64")]
+use std::sync::Mutex;
+#[cfg(target_arch = "aarch64")]
+use crate::arch::aarch64::gic::{Vgic, VgicConfig};
 ///
 /// Export generically-named wrappers of mshv-bindings for Unix-based platforms
 ///
@@ -443,6 +458,18 @@ impl hypervisor::Hypervisor for MshvHypervisor {
     fn get_guest_debug_hw_bps(&self) -> usize {
         0
     }
+
+    #[cfg(target_arch = "aarch64")]
+    ///
+    /// Retrieve AArch64 host maximum IPA size supported by MSHV.
+    ///
+    fn get_host_ipa_limit(&self) -> i32 {
+        self.mshv
+            .get_host_partition_property(
+                hv_partition_property_code_HV_PARTITION_PROPERTY_PHYSICAL_ADDRESS_WIDTH as u64,
+            )
+            .unwrap()
+    }
 }
 
 #[cfg(feature = "sev_snp")]
@@ -488,6 +515,29 @@ pub struct MshvVcpu {
 /// let vcpu = vm.create_vcpu(0, None).unwrap();
 /// ```
 impl cpu::Vcpu for MshvVcpu {
+    #[cfg(target_arch = "aarch64")]
+    fn vcpu_finalize(&self, feature: i32) -> cpu::Result<()> {
+        unimplemented!()
+    }
+    ///
+    /// Gets the features that have been finalized for a given CPU.
+    ///
+    #[cfg(target_arch = "aarch64")]
+    fn vcpu_get_finalized_features(&self) -> i32 {
+        unimplemented!()
+    }
+    ///
+    /// Sets processor features for a given CPU.
+    ///
+    #[cfg(target_arch = "aarch64")]
+    fn vcpu_set_processor_features(
+        &self,
+        vm: &Arc<dyn crate::Vm>,
+        kvi: &mut VcpuInit,
+        id: u8,
+    ) -> cpu::Result<()> {
+        unimplemented!()
+    }
     ///
     /// Returns StandardRegisters with default value set
     ///
@@ -1248,12 +1298,12 @@ impl cpu::Vcpu for MshvVcpu {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn set_regs(&self, regs: &StandardRegisters) -> cpu::Result<()> {
+    fn set_regs(&self, regs: &crate::StandardRegisters) -> cpu::Result<()> {
         unimplemented!()
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn get_regs(&self) -> cpu::Result<StandardRegisters> {
+    fn get_regs(&self) -> cpu::Result<crate::StandardRegisters> {
         unimplemented!()
     }
 
@@ -1868,7 +1918,7 @@ impl vm::Vm for MshvVm {
 
     fn create_passthrough_device(&self) -> vm::Result<VfioDeviceFd> {
         let mut vfio_dev = mshv_create_device {
-            type_: mshv_device_type_MSHV_DEV_TYPE_VFIO,
+            type_: MSHV_DEV_TYPE_VFIO,
             fd: 0,
             flags: 0,
         };

@@ -75,6 +75,8 @@ use crate::{
 // aarch64 dependencies
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
+#[cfg(target_arch = "aarch64")]
+use crate::VcpuInit;
 // riscv64 dependencies
 #[cfg(target_arch = "riscv64")]
 pub mod riscv64;
@@ -368,25 +370,6 @@ impl From<crate::Register> for kvm_bindings::kvm_one_reg {
     }
 }
 
-#[cfg(target_arch = "aarch64")]
-impl From<kvm_bindings::kvm_vcpu_init> for crate::VcpuInit {
-    fn from(s: kvm_bindings::kvm_vcpu_init) -> Self {
-        crate::VcpuInit::Kvm(s)
-    }
-}
-
-#[cfg(target_arch = "aarch64")]
-impl From<crate::VcpuInit> for kvm_bindings::kvm_vcpu_init {
-    fn from(e: crate::VcpuInit) -> Self {
-        match e {
-            crate::VcpuInit::Kvm(e) => e,
-            /* Needed in case other hypervisors are enabled */
-            #[allow(unreachable_patterns)]
-            _ => panic!("VcpuInit is not valid"),
-        }
-    }
-}
-
 #[cfg(any(target_arch = "aarch64", target_arch = "riscv64"))]
 impl From<kvm_bindings::RegList> for crate::RegList {
     fn from(s: kvm_bindings::RegList) -> Self {
@@ -402,6 +385,25 @@ impl From<crate::RegList> for kvm_bindings::RegList {
             /* Needed in case other hypervisors are enabled */
             #[allow(unreachable_patterns)]
             _ => panic!("RegList is not valid"),
+        }
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+impl From<kvm_bindings::kvm_vcpu_init> for crate::VcpuInit {
+    fn from(s: kvm_bindings::kvm_vcpu_init) -> Self {
+        crate::VcpuInit::Kvm(s)
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+impl From<crate::VcpuInit> for kvm_bindings::kvm_vcpu_init {
+    fn from(e: crate::VcpuInit) -> Self {
+        match e {
+            crate::VcpuInit::Kvm(e) => e,
+            /* Needed in case other hypervisors are enabled */
+            #[allow(unreachable_patterns)]
+            _ => panic!("VcpuInit is not valid"),
         }
     }
 }
@@ -807,7 +809,7 @@ impl vm::Vm for KvmVm {
     /// Returns the preferred CPU target type which can be emulated by KVM on underlying host.
     ///
     #[cfg(target_arch = "aarch64")]
-    fn get_preferred_target(&self, kvi: &mut crate::VcpuInit) -> vm::Result<()> {
+    fn get_preferred_target(&self, kvi: &mut VcpuInit) -> vm::Result<()> {
         let mut kvm_kvi: kvm_bindings::kvm_vcpu_init = (*kvi).into();
         self.fd
             .get_preferred_target(&mut kvm_kvi)
@@ -1344,6 +1346,13 @@ impl cpu::Vcpu for KvmVcpu {
         {
             kvm_bindings::kvm_riscv_core::default().into()
         }
+    }
+    ///
+    /// Return VcpuInit with default value set
+    ///
+    #[cfg(target_arch = "aarch64")]
+    fn create_vcpu_init(&self) -> VcpuInit {
+        kvm_bindings::kvm_vcpu_init::default().into()
     }
     #[cfg(target_arch = "x86_64")]
     ///
@@ -2666,7 +2675,7 @@ impl cpu::Vcpu for KvmVcpu {
     fn vcpu_set_processor_features(
         &self,
         vm: &Arc<dyn crate::Vm>,
-        kvi: &mut crate::VcpuInit,
+        kvi: &mut VcpuInit,
         id: u8,
     ) -> cpu::Result<()> {
         use std::arch::is_aarch64_feature_detected;
@@ -2707,16 +2716,8 @@ impl cpu::Vcpu for KvmVcpu {
         Ok(())
     }
 
-    ///
-    /// Return VcpuInit with default value set
-    ///
     #[cfg(target_arch = "aarch64")]
-    fn create_vcpu_init(&self) -> crate::VcpuInit {
-        kvm_bindings::kvm_vcpu_init::default().into()
-    }
-
-    #[cfg(target_arch = "aarch64")]
-    fn vcpu_init(&self, kvi: &crate::VcpuInit) -> cpu::Result<()> {
+    fn vcpu_init(&self, kvi: &VcpuInit) -> cpu::Result<()> {
         let kvm_kvi: kvm_bindings::kvm_vcpu_init = (*kvi).into();
         self.fd
             .lock()
