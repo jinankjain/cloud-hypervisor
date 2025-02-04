@@ -1280,7 +1280,7 @@ impl cpu::Vcpu for MshvVcpu {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn init_pmu(&self, irq: u32) -> cpu::Result<()> {
+    fn init_pmu(&self, _irq: u32) -> cpu::Result<()> {
         unimplemented!()
     }
 
@@ -1290,27 +1290,27 @@ impl cpu::Vcpu for MshvVcpu {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn setup_regs(&self, cpu_id: u8, boot_ip: u64, fdt_start: u64) -> cpu::Result<()> {
+    fn setup_regs(&self, _cpu_id: u8, _boot_ip: u64, _fdt_start: u64) -> cpu::Result<()> {
         unimplemented!()
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn get_sys_reg(&self, sys_reg: u32) -> cpu::Result<u64> {
+    fn get_sys_reg(&self, _sys_reg: u32) -> cpu::Result<u64> {
         unimplemented!()
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn get_reg_list(&self, reg_list: &mut RegList) -> cpu::Result<()> {
+    fn get_reg_list(&self, _reg_list: &mut RegList) -> cpu::Result<()> {
         unimplemented!()
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn vcpu_init(&self, kvi: &VcpuInit) -> cpu::Result<()> {
+    fn vcpu_init(&self, _kvi: &VcpuInit) -> cpu::Result<()> {
         unimplemented!()
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn set_regs(&self, regs: &StandardRegisters) -> cpu::Result<()> {
+    fn set_regs(&self, _regs: &StandardRegisters) -> cpu::Result<()> {
         unimplemented!()
     }
 
@@ -1451,7 +1451,7 @@ impl cpu::Vcpu for MshvVcpu {
     ///
     /// Set CPU state for aarch64 guest.
     ///
-    fn set_state(&self, state: &CpuState) -> cpu::Result<()> {
+    fn set_state(&self, _state: &CpuState) -> cpu::Result<()> {
         unimplemented!()
     }
 
@@ -2177,12 +2177,12 @@ impl vm::Vm for MshvVm {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn create_vgic(&self, config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
+    fn create_vgic(&self, _config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
         unimplemented!()
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn get_preferred_target(&self, kvi: &mut VcpuInit) -> vm::Result<()> {
+    fn get_preferred_target(&self, _kvi: &mut VcpuInit) -> vm::Result<()> {
         unimplemented!()
     }
 
