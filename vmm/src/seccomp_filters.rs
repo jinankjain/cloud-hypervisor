@@ -173,7 +173,9 @@ fn create_vmm_ioctl_seccomp_rule_common_mshv() -> Result<Vec<SeccompRule>, Backe
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_GET_VP_REGISTERS())?],
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_SET_VP_REGISTERS())?],
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_RUN_VP())?],
+        #[cfg(target_arch = "x86_64")]
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_GET_VP_STATE())?],
+        #[cfg(target_arch = "x86_64")]
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_SET_VP_STATE())?],
         and![Cond::new(
             1,
@@ -194,6 +196,7 @@ fn create_vmm_ioctl_seccomp_rule_common_mshv() -> Result<Vec<SeccompRule>, Backe
             MSHV_GET_GPAP_ACCESS_BITMAP()
         )?],
         and![Cond::new(1, ArgLen::Dword, Eq, MSHV_VP_TRANSLATE_GVA())?],
+        #[cfg(target_arch = "x86_64")]
         and![Cond::new(
             1,
             ArgLen::Dword,
@@ -447,7 +450,7 @@ fn create_vmm_ioctl_seccomp_rule_kvm() -> Result<Vec<SeccompRule>, BackendError>
     Ok(arch_rules)
 }
 
-#[cfg(all(target_arch = "x86_64", feature = "mshv"))]
+#[cfg(feature = "mshv")]
 fn create_vmm_ioctl_seccomp_rule_mshv() -> Result<Vec<SeccompRule>, BackendError> {
     create_vmm_ioctl_seccomp_rule_common(HypervisorType::Mshv)
 }
