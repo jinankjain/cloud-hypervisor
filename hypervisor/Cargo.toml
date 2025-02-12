@@ -15,6 +15,7 @@ tdx = []
 [dependencies]
 anyhow = "1.0.94"
 arc-swap = "1.7.1"
+bitfield-struct = "0.10.1"
 byteorder = "1.5.0"
 cfg-if = "1.0.0"
 concat-idents = "1.1.5"
@@ -29,6 +30,7 @@ mshv-bindings = { workspace = true, features = [
   "with-serde",
 ], optional = true }
 mshv-ioctls = { workspace = true, optional = true }
+open-enum = "0.5.2"
 serde = { version = "1.0.208", features = ["derive", "rc"] }
 serde_with = { version = "3.9.0", default-features = false, features = [
   "macros",
@@ -41,6 +43,7 @@ vm-memory = { workspace = true, features = [
   "backend-mmap",
 ] }
 vmm-sys-util = { workspace = true, features = ["with-serde"] }
+zerocopy = { version = "0.8.17", features = ["derive"] }
 
 [target.'cfg(target_arch = "x86_64")'.dependencies.iced-x86]
 default-features = false
