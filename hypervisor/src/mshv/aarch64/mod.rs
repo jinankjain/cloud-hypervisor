@@ -2,6 +2,7 @@
 //
 // Copyright © 2025, Microsoft Corporation
 //
+pub mod emulator;
 use std::fmt;
 
 ///
