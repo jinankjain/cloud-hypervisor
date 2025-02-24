@@ -5,9 +5,10 @@
 use std::any::Any;
 use std::result;
 
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{CpuState, GicState, HypervisorDeviceError, HypervisorVmError};
+use crate::{CpuState, HypervisorDeviceError, HypervisorVmError};
 
 /// Errors thrown while setting up the VGIC.
 #[derive(Debug, Error)]
@@ -34,6 +35,12 @@ pub struct VgicConfig {
     pub msi_addr: u64,
     pub msi_size: u64,
     pub nr_irqs: u32,
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+pub enum GicState {
+    #[cfg(feature = "kvm")]
+    Kvm(crate::kvm::aarch64::gic::Gicv3ItsState),
 }
 
 /// Hypervisor agnostic interface for a virtualized GIC
