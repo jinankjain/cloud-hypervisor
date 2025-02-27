@@ -580,6 +580,39 @@ impl Vm {
             )
             .map_err(Error::CpuManager)?;
 
+        #[cfg(feature = "tdx")]
+        let dynamic = !tdx_enabled;
+        #[cfg(not(feature = "tdx"))]
+        let dynamic = true;
+
+        let device_manager = DeviceManager::new(
+            #[cfg(target_arch = "x86_64")]
+            io_bus,
+            mmio_bus,
+            hypervisor.clone(),
+            vm.clone(),
+            config.clone(),
+            memory_manager.clone(),
+            cpu_manager.clone(),
+            exit_evt.try_clone().map_err(Error::EventFdClone)?,
+            reset_evt,
+            seccomp_action.clone(),
+            numa_nodes.clone(),
+            &activate_evt,
+            force_iommu,
+            boot_id_list,
+            timestamp,
+            snapshot_from_id(snapshot.as_ref(), DEVICE_MANAGER_SNAPSHOT_ID),
+            dynamic,
+        )
+        .map_err(Error::DeviceManager)?;
+
+        device_manager
+            .lock()
+            .unwrap()
+            .create_devices(console_info, console_resize_pipe, original_termios)
+            .map_err(Error::DeviceManager)?;
+
         cpu_manager
             .lock()
             .unwrap()
@@ -623,39 +656,6 @@ impl Vm {
             vm.tdx_init(&cpuid, max_vcpus)
                 .map_err(Error::InitializeTdxVm)?;
         }
-
-        #[cfg(feature = "tdx")]
-        let dynamic = !tdx_enabled;
-        #[cfg(not(feature = "tdx"))]
-        let dynamic = true;
-
-        let device_manager = DeviceManager::new(
-            #[cfg(target_arch = "x86_64")]
-            io_bus,
-            mmio_bus,
-            hypervisor.clone(),
-            vm.clone(),
-            config.clone(),
-            memory_manager.clone(),
-            cpu_manager.clone(),
-            exit_evt.try_clone().map_err(Error::EventFdClone)?,
-            reset_evt,
-            seccomp_action.clone(),
-            numa_nodes.clone(),
-            &activate_evt,
-            force_iommu,
-            boot_id_list,
-            timestamp,
-            snapshot_from_id(snapshot.as_ref(), DEVICE_MANAGER_SNAPSHOT_ID),
-            dynamic,
-        )
-        .map_err(Error::DeviceManager)?;
-
-        device_manager
-            .lock()
-            .unwrap()
-            .create_devices(console_info, console_resize_pipe, original_termios)
-            .map_err(Error::DeviceManager)?;
 
         #[cfg(feature = "tdx")]
         let kernel = config
