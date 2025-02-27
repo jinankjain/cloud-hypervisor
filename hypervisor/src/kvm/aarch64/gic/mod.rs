@@ -14,7 +14,7 @@ use kvm_ioctls::DeviceFd;
 use redist_regs::{construct_gicr_typers, get_redist_regs, set_redist_regs};
 use serde::{Deserialize, Serialize};
 
-use crate::arch::aarch64::gic::{Error, Result, Vgic, VgicConfig, GicState};
+use crate::arch::aarch64::gic::{Error, GicState, Result, Vgic, VgicConfig};
 use crate::device::HypervisorDeviceError;
 use crate::kvm::KvmVm;
 use crate::{CpuState, Vm};
@@ -392,7 +392,8 @@ impl Vgic for KvmGicV3Its {
             its_cwriter: its_cwriter_state,
             its_creadr: its_creadr_state,
             its_baser: its_baser_state,
-        }.into();
+        }
+        .into();
 
         Ok(gic_state)
     }

@@ -36,19 +36,21 @@ pub mod x86_64;
 // aarch64 dependencies
 #[cfg(target_arch = "aarch64")]
 pub mod aarch64;
-#[cfg(target_arch = "x86_64")]
-use std::fs::File;
-use std::os::unix::io::AsRawFd;
-#[cfg(target_arch = "aarch64")]
-use std::sync::Mutex;
 #[cfg(target_arch = "aarch64")]
 use crate::arch::aarch64::gic::{Vgic, VgicConfig};
+#[cfg(target_arch = "aarch64")]
+use aarch64::gic::MshvGicV2M;
 #[cfg(target_arch = "aarch64")]
 pub use aarch64::VcpuMshvState;
 #[cfg(feature = "sev_snp")]
 use igvm_defs::IGVM_VHS_SNP_ID_BLOCK;
 #[cfg(feature = "sev_snp")]
 use snp_constants::*;
+#[cfg(target_arch = "x86_64")]
+use std::fs::File;
+use std::os::unix::io::AsRawFd;
+#[cfg(target_arch = "aarch64")]
+use std::sync::Mutex;
 use vmm_sys_util::eventfd::EventFd;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::*;
@@ -1969,9 +1971,12 @@ impl vm::Vm for MshvVm {
                 data: cfg.data,
             }
             .into(),
-            _ => {
-                unreachable!()
+            InterruptSourceConfig::LegacyIrq(cfg) => mshv_user_irq_entry {
+                gsi,
+                data: cfg.pin + 32,
+                ..Default::default()
             }
+            .into(),
         }
     }
 
@@ -2170,8 +2175,10 @@ impl vm::Vm for MshvVm {
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn create_vgic(&self, _config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
-        unimplemented!()
+    fn create_vgic(&self, config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
+        let gic_device = MshvGicV2M::new(self, config)
+            .map_err(|e| vm::HypervisorVmError::CreateVgic(anyhow!("Vgic error {:?}", e)))?;
+        Ok(Arc::new(Mutex::new(gic_device)))
     }
 
     #[cfg(target_arch = "aarch64")]

@@ -41,6 +41,8 @@ pub struct VgicConfig {
 pub enum GicState {
     #[cfg(feature = "kvm")]
     Kvm(crate::kvm::aarch64::gic::Gicv3ItsState),
+    #[cfg(feature = "mshv")]
+    Mshv(crate::mshv::aarch64::gic::MshvGicV2MState),
 }
 
 /// Hypervisor agnostic interface for a virtualized GIC

@@ -3,6 +3,7 @@
 // Copyright © 2025, Microsoft Corporation
 //
 pub mod emulator;
+pub mod gic;
 use std::fmt;
 
 ///

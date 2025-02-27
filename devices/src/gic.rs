@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 
 use anyhow::anyhow;
 use arch::layout;
-use hypervisor::arch::aarch64::gic::{Vgic, VgicConfig, GicState};
+use hypervisor::arch::aarch64::gic::{GicState, Vgic, VgicConfig};
 use hypervisor::CpuState;
 use vm_device::interrupt::{
     InterruptIndex, InterruptManager, InterruptSourceConfig, InterruptSourceGroup,
