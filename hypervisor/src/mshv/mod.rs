@@ -2131,6 +2131,31 @@ impl vm::Vm for MshvVm {
     fn create_vgic(&self, config: VgicConfig) -> vm::Result<Arc<Mutex<dyn Vgic>>> {
         let gic_device = MshvGicV2M::new(self, config)
             .map_err(|e| vm::HypervisorVmError::CreateVgic(anyhow!("Vgic error {:?}", e)))?;
+
+        // Register GICD address with the hypervisor
+        self.fd.set_partition_property(
+            hv_partition_property_code_HV_PARTITION_PROPERTY_GICD_BASE_ADDRESS,
+            gic_device.dist_addr,
+        )
+        .map_err(|e| {
+            vm::HypervisorVmError::CreateVgic(anyhow!(
+                "Failed to set GICD address: {}",
+                e
+            ))
+        })?;
+
+        // Register GITS address with the hypervisor
+        self.fd.set_partition_property(
+            hv_partition_property_code_HV_PARTITION_PROPERTY_GITS_TRANSLATER_BASE_ADDRESS,
+            gic_device.gits_addr,
+        )
+        .map_err(|e| {
+            vm::HypervisorVmError::CreateVgic(anyhow!(
+                "Failed to set GITS address: {}",
+                e
+            ))
+        })?;
+
         Ok(Arc::new(Mutex::new(gic_device)))
     }
 

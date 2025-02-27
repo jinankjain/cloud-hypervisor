@@ -119,3 +119,7 @@ virtio-queue = "0.14.0"
 vm-fdt = { git = "https://github.com/rust-vmm/vm-fdt", branch = "main" }
 vm-memory = "0.16.1"
 vmm-sys-util = "0.12.1"
+
+[patch."registry+https://github.com/rust-lang/crates.io-index"]
+mshv-bindings = { path = "../mshv/mshv-bindings" }
+mshv-ioctls = { path = "../mshv/mshv-ioctls" }
