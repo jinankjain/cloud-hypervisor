@@ -141,6 +141,9 @@ pub enum Error {
     #[error("Error from device manager: {0:?}")]
     DeviceManager(DeviceManagerError),
 
+    #[error("Error initialzing VM: {0:?}")]
+    InitializeVm(hypervisor::HypervisorVmError),
+
     #[error("No device with id {0:?} to remove")]
     NoDeviceToRemove(String),
 
@@ -597,10 +600,18 @@ impl Vm {
         )
         .map_err(Error::DeviceManager)?;
 
+        let ic = device_manager
+            .lock()
+            .unwrap()
+            .create_interrupt_cotroller()
+            .map_err(Error::DeviceManager)?;
+
+        vm.initialize().map_err(Error::InitializeVm)?;
+
         device_manager
             .lock()
             .unwrap()
-            .create_devices(console_info, console_resize_pipe, original_termios)
+            .create_devices(console_info, console_resize_pipe, original_termios, ic)
             .map_err(Error::DeviceManager)?;
 
         // Loading the igvm file is pushed down here because
