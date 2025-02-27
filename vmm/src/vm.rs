@@ -572,6 +572,37 @@ impl Vm {
             )
             .map_err(Error::CpuManager)?;
 
+        #[cfg(feature = "tdx")]
+        let dynamic = !tdx_enabled;
+        #[cfg(not(feature = "tdx"))]
+        let dynamic = true;
+
+        let device_manager = DeviceManager::new(
+            io_bus,
+            mmio_bus,
+            vm.clone(),
+            config.clone(),
+            memory_manager.clone(),
+            cpu_manager.clone(),
+            exit_evt.try_clone().map_err(Error::EventFdClone)?,
+            reset_evt,
+            seccomp_action.clone(),
+            numa_nodes.clone(),
+            &activate_evt,
+            force_iommu,
+            boot_id_list,
+            timestamp,
+            snapshot_from_id(snapshot.as_ref(), DEVICE_MANAGER_SNAPSHOT_ID),
+            dynamic,
+        )
+        .map_err(Error::DeviceManager)?;
+
+        device_manager
+            .lock()
+            .unwrap()
+            .create_devices(console_info, console_resize_pipe, original_termios)
+            .map_err(Error::DeviceManager)?;
+
         // Loading the igvm file is pushed down here because
         // igvm parser needs cpu_manager to retrieve cpuid leaf.
         // For the regular case, we can start loading early, but for
@@ -614,37 +645,6 @@ impl Vm {
         if sev_snp_enabled {
             vm.sev_snp_init().map_err(Error::InitializeSevSnpVm)?;
         }
-
-        #[cfg(feature = "tdx")]
-        let dynamic = !tdx_enabled;
-        #[cfg(not(feature = "tdx"))]
-        let dynamic = true;
-
-        let device_manager = DeviceManager::new(
-            io_bus,
-            mmio_bus,
-            vm.clone(),
-            config.clone(),
-            memory_manager.clone(),
-            cpu_manager.clone(),
-            exit_evt.try_clone().map_err(Error::EventFdClone)?,
-            reset_evt,
-            seccomp_action.clone(),
-            numa_nodes.clone(),
-            &activate_evt,
-            force_iommu,
-            boot_id_list,
-            timestamp,
-            snapshot_from_id(snapshot.as_ref(), DEVICE_MANAGER_SNAPSHOT_ID),
-            dynamic,
-        )
-        .map_err(Error::DeviceManager)?;
-
-        device_manager
-            .lock()
-            .unwrap()
-            .create_devices(console_info, console_resize_pipe, original_termios)
-            .map_err(Error::DeviceManager)?;
 
         #[cfg(feature = "tdx")]
         let kernel = config
