@@ -1242,8 +1242,8 @@ impl MemoryManager {
             // And the restore of VGIC happens before we attempt to run the vCPUs
             // for the first time, thus we need to allocate the address space
             // beforehand.
-            memory_manager.allocate_address_space()?;
-            memory_manager.add_uefi_flash()?;
+            // memory_manager.allocate_address_space()?;
+            // memory_manager.add_uefi_flash()?;
         }
 
         #[cfg(target_arch = "x86_64")]

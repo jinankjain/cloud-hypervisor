@@ -13,8 +13,8 @@ use std::sync::{Arc, RwLock};
 use arc_swap::ArcSwap;
 use mshv_bindings::*;
 #[cfg(target_arch = "x86_64")]
-use mshv_ioctls::{set_registers_64, InterruptRequest};
-use mshv_ioctls::{Mshv, NoDatamatch, VcpuFd, VmFd, VmType};
+use mshv_ioctls::InterruptRequest;
+use mshv_ioctls::{Mshv, set_registers_64, NoDatamatch, VcpuFd, VmFd, VmType};
 use vfio_ioctls::VfioDeviceFd;
 use vm::DataMatch;
 #[cfg(feature = "sev_snp")]
@@ -56,6 +56,8 @@ use vmm_sys_util::eventfd::EventFd;
 pub use x86_64::*;
 #[cfg(target_arch = "x86_64")]
 pub use x86_64::{emulator, VcpuMshvState};
+
+use crate::mshv::aarch64::emulator;
 ///
 /// Export generically-named wrappers of mshv-bindings for Unix-based platforms
 ///
@@ -731,6 +733,27 @@ impl cpu::Vcpu for MshvVcpu {
                         .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
                     Ok(cpu::VmExit::Ignore)
                 }
+                hv_message_type_HVMSG_UNMAPPED_GPA => {
+                    let info = x.to_memory_info().unwrap();
+                    let insn_len = info.instruction_byte_count as usize;
+                    let gva = info.guest_virtual_address;
+                    let gpa = info.guest_physical_address;
+
+                    let mut context = emulator::MshvEmulatorContext {
+                        vcpu: self,
+                        map: (gva, gpa),
+                        syndrome: info.syndrome,
+                        instruction_bytes: info.instruction_bytes,
+                        instruction_byte_count: info.instruction_byte_count,
+                        interruption_pending: unsafe { info.header.execution_state.__bindgen_anon_1.interruption_pending() != 0 },
+                        pc: info.header.pc
+                    };
+
+                    let mut emulator = emulator::Emulator::new(context);
+                    emulator.emulate();
+
+                    Ok(cpu::VmExit::Ignore)
+                }
                 #[cfg(target_arch = "x86_64")]
                 msg_type @ (hv_message_type_HVMSG_UNMAPPED_GPA
                 | hv_message_type_HVMSG_GPA_INTERCEPT) => {
@@ -1239,22 +1262,50 @@ impl cpu::Vcpu for MshvVcpu {
 
     #[cfg(target_arch = "aarch64")]
     fn init_pmu(&self, _irq: u32) -> cpu::Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     #[cfg(target_arch = "aarch64")]
     fn has_pmu_support(&self) -> bool {
-        unimplemented!()
+        true
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn setup_regs(&self, _cpu_id: u8, _boot_ip: u64, _fdt_start: u64) -> cpu::Result<()> {
-        unimplemented!()
+    fn setup_regs(&self, cpu_id: u8, boot_ip: u64, fdt_start: u64) -> cpu::Result<()> {
+        let arr_reg_name_value = [(hv_register_name_HV_ARM64_REGISTER_PSTATE, 0x3c5)];
+        set_registers_64!(self.fd, arr_reg_name_value)
+            .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
+
+        if cpu_id == 0 {
+            let arr_reg_name_value = [
+                (hv_register_name_HV_ARM64_REGISTER_PC, boot_ip),
+                (hv_register_name_HV_ARM64_REGISTER_GICR_BASE_GPA, 150798336),
+                (hv_register_name_HV_ARM64_REGISTER_X0, fdt_start),
+            ];
+            set_registers_64!(self.fd, arr_reg_name_value)
+                .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
+        }
+
+        Ok(())
     }
 
     #[cfg(target_arch = "aarch64")]
-    fn get_sys_reg(&self, _sys_reg: u32) -> cpu::Result<u64> {
-        unimplemented!()
+    fn get_sys_reg(&self, sys_reg: u32) -> cpu::Result<u64> {
+        match sys_reg {
+            3575120032 => {
+                let mut reg_assocs = [hv_register_assoc {
+                    name: hv_register_name_HV_ARM64_REGISTER_MPIDR_EL1,
+                    ..Default::default()
+                }];
+                self.fd.get_reg(&mut reg_assocs).unwrap();
+                let res = unsafe { reg_assocs[0].value.reg64 };
+                info!("Value of mpidr_el1: {:?}", res);
+                return Ok(res);
+            }
+            _ => {
+                panic!("Unsupported sysreg {:?}", sys_reg);
+            }
+        }
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -1264,17 +1315,17 @@ impl cpu::Vcpu for MshvVcpu {
 
     #[cfg(target_arch = "aarch64")]
     fn vcpu_init(&self, _kvi: &crate::VcpuInit) -> cpu::Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     #[cfg(target_arch = "aarch64")]
     fn vcpu_finalize(&self, _feature: i32) -> cpu::Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     #[cfg(target_arch = "aarch64")]
     fn vcpu_get_finalized_features(&self) -> i32 {
-        unimplemented!()
+        0
     }
 
     #[cfg(target_arch = "aarch64")]
@@ -1284,12 +1335,12 @@ impl cpu::Vcpu for MshvVcpu {
         _kvi: &mut crate::VcpuInit,
         _id: u8,
     ) -> cpu::Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     #[cfg(target_arch = "aarch64")]
     fn create_vcpu_init(&self) -> crate::VcpuInit {
-        unimplemented!();
+        MshvVcpuInit::default().into()
     }
 
     #[cfg(target_arch = "x86_64")]
@@ -2161,7 +2212,7 @@ impl vm::Vm for MshvVm {
 
     #[cfg(target_arch = "aarch64")]
     fn get_preferred_target(&self, _kvi: &mut crate::VcpuInit) -> vm::Result<()> {
-        unimplemented!()
+        Ok(())
     }
 
     /// Pause the VM
