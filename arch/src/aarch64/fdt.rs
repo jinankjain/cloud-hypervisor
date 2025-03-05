@@ -675,6 +675,15 @@ fn create_gic_node(fdt: &mut FdtWriter, gic_device: &Arc<Mutex<dyn Vgic>>) -> Fd
         fdt.property_u32("phandle", MSI_PHANDLE)?;
         let msi_reg_prop = gic_device.lock().unwrap().msi_properties();
         fdt.property_array_u64("reg", &msi_reg_prop)?;
+
+        // Add arm,msi-base-spi (Guest expects this property)
+        let spi_start = 32; // This is just an example, replace it with the correct value for your case
+        fdt.property_u32("arm,msi-base-spi", spi_start)?;
+        
+        // Add arm,msi-num-spis (Guest expects this property)
+        let nr_spis = 64; // Replace with the correct number of SPIs for your use case
+        fdt.property_u32("arm,msi-num-spis", nr_spis)?;
+        
         fdt.end_node(msic_node)?;
     }
 
