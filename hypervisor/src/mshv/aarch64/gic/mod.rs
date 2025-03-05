@@ -75,7 +75,7 @@ impl Vgic for MshvGicV2M {
     }
 
     fn msi_compatibility(&self) -> &str {
-        "arm,gic-v2m"
+        "arm,gic-v2m-frame"
     }
 
     fn fdt_maint_irq(&self) -> u32 {
