@@ -1967,6 +1967,7 @@ impl vm::Vm for MshvVm {
     /// Constructs a routing entry
     ///
     fn make_routing_entry(&self, gsi: u32, config: &InterruptSourceConfig) -> IrqRoutingEntry {
+        println!("make_routing_entry gsi {} config {:?}", gsi, config);
         match config {
             InterruptSourceConfig::MsiIrq(cfg) => mshv_user_irq_entry {
                 gsi,
@@ -2206,6 +2207,18 @@ impl vm::Vm for MshvVm {
                 e
             ))
         })?;
+
+        self.fd.set_partition_property(
+            hv_partition_property_code_HV_PARTITION_PROPERTY_GIC_LPI_INT_ID_BITS,
+            0,
+        )
+        .map_err(|e| {
+            vm::HypervisorVmError::CreateVgic(anyhow!(
+                "Failed to set LPI INTID: {}",
+                e
+            ))
+        })?;
+
 
         Ok(Arc::new(Mutex::new(gic_device)))
     }
