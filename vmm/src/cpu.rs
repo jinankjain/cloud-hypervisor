@@ -1501,6 +1501,7 @@ impl CpuManager {
             madt.append(gicd);
 
             // See 5.2.12.17 GIC Redistributor (GICR) Structure in ACPI spec.
+            info!("GICR base address: {:#x}", vgic_config.redists_addr);
             let gicr = GicR {
                 r#type: acpi::ACPI_APIC_GENERIC_REDISTRIBUTOR,
                 length: 16,

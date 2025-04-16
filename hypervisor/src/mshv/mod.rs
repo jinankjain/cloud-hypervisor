@@ -1967,7 +1967,7 @@ impl vm::Vm for MshvVm {
     /// Constructs a routing entry
     ///
     fn make_routing_entry(&self, gsi: u32, config: &InterruptSourceConfig) -> IrqRoutingEntry {
-        println!("make_routing_entry gsi {} config {:?}", gsi, config);
+        // println!("make_routing_entry gsi {} config {:?}", gsi, config);
         match config {
             InterruptSourceConfig::MsiIrq(cfg) => mshv_user_irq_entry {
                 gsi,
@@ -2195,6 +2195,8 @@ impl vm::Vm for MshvVm {
                 e
             ))
         })?;
+        //property.Arm64IcParameters.GicV3Parameters.GicPpiOverflowInterruptFromCntv = 0x1B;
+        //property.Arm64IcParameters.GicV3Parameters.GicPpiPerformanceMonitorsInterrupt = 0x17;
 
         // Register GITS address with the hypervisor
         self.fd.set_partition_property(
@@ -2218,6 +2220,29 @@ impl vm::Vm for MshvVm {
                 e
             ))
         })?;
+
+
+        // self.fd.set_partition_property(
+        //     hv_partition_property_code_HV_PARTITION_PROPERTY_GIC_PPI_OVERFLOW_INTERRUPT_FROM_CNTV,
+        //     0x1B,
+        // )
+        // .map_err(|e| {
+        //     vm::HypervisorVmError::CreateVgic(anyhow!(
+        //         "Failed to set CNTV INTID: {}",
+        //         e
+        //     ))
+        // })?;
+
+        // self.fd.set_partition_property(
+        //     hv_partition_property_code_HV_PARTITION_PROPERTY_GIC_PPI_PERFORMANCE_MONITORS_INTERRUPT,
+        //     0x17,
+        // )
+        // .map_err(|e| {
+        //     vm::HypervisorVmError::CreateVgic(anyhow!(
+        //         "Failed to set PMON INTID: {}",
+        //         e
+        //     ))
+        // })?;
 
 
         Ok(Arc::new(Mutex::new(gic_device)))

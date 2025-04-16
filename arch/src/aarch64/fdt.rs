@@ -712,7 +712,7 @@ fn create_timer_node(fdt: &mut FdtWriter) -> FdtWriterResult<()> {
     // See
     // https://github.com/torvalds/linux/blob/master/Documentation/devicetree/bindings/interrupt-controller/arch_timer.txt
     // These are fixed interrupt numbers for the timer device.
-    let irqs = [13, 14, 11, 10];
+    let irqs = [13, 14, 4, 10];
     let compatible = "arm,armv8-timer";
 
     let mut timer_reg_cells: Vec<u32> = Vec::new();

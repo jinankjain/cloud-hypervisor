@@ -40,7 +40,7 @@ where
         .map_err(|_| Error::SeekUefiEnd)? as usize;
 
     // edk2 image on virtual platform is smaller than 3M
-    if uefi_size > 0x300000 {
+    if uefi_size > 0x400000 {
         return Err(Error::UefiTooBig);
     }
     uefi_image.rewind().map_err(|_| Error::SeekUefiStart)?;

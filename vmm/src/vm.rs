@@ -504,12 +504,6 @@ impl Vm {
             .validate()
             .map_err(Error::ConfigValidation)?;
 
-        #[cfg(not(feature = "igvm"))]
-        let load_payload_handle = if snapshot.is_none() {
-            Self::load_payload_async(&memory_manager, &config)?
-        } else {
-            None
-        };
 
         info!("Booting VM from config: {:?}", &config);
 
@@ -613,6 +607,26 @@ impl Vm {
             .unwrap()
             .create_devices(console_info, console_resize_pipe, original_termios, ic)
             .map_err(Error::DeviceManager)?;
+
+        memory_manager
+            .lock()
+            .unwrap()
+            .add_uefi_flash()
+            .map_err(Error::MemoryManager)?;
+
+        memory_manager
+            .lock()
+            .unwrap()
+            .allocate_address_space()
+            .map_err(Error::MemoryManager)?;
+
+
+        #[cfg(not(feature = "igvm"))]
+        let load_payload_handle = if snapshot.is_none() {
+            Self::load_payload_async(&memory_manager, &config)?
+        } else {
+            None
+        };
 
         // Loading the igvm file is pushed down here because
         // igvm parser needs cpu_manager to retrieve cpuid leaf.
@@ -2144,17 +2158,7 @@ impl Vm {
         // userspace mappings to update the hypervisor about the memory mappings.
         // These mappings must be created before we start the vCPU threads for
         // the very first time.
-        self.memory_manager
-            .lock()
-            .unwrap()
-            .allocate_address_space()
-            .map_err(Error::MemoryManager)?;
 
-        // self.memory_manager
-        //     .lock()
-        //     .unwrap()
-        //     .add_uefi_flash()
-        //     .map_err(Error::MemoryManager)?;
 
         #[cfg(feature = "tdx")]
         if let Some(hob_address) = hob_address {
