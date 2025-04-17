@@ -590,4 +590,9 @@ pub trait Vcpu: Send + Sync {
     /// Trigger NMI interrupt
     ///
     fn nmi(&self) -> Result<()>;
+
+    #[cfg(target_arch = "aarch64")]
+    fn set_redist_reg(&self, gicr_base: u64) -> Result<()> {
+        unimplemented!()
+    }
 }

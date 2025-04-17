@@ -1279,12 +1279,22 @@ impl cpu::Vcpu for MshvVcpu {
         if cpu_id == 0 {
             let arr_reg_name_value = [
                 (hv_register_name_HV_ARM64_REGISTER_PC, boot_ip),
-                (hv_register_name_HV_ARM64_REGISTER_GICR_BASE_GPA, 150798336),
+                // (hv_register_name_HV_ARM64_REGISTER_GICR_BASE_GPA, 150798336),
                 (hv_register_name_HV_ARM64_REGISTER_X0, fdt_start),
             ];
             set_registers_64!(self.fd, arr_reg_name_value)
                 .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
         }
+
+        Ok(())
+    }
+
+    #[cfg(target_arch = "aarch64")]
+    fn set_redist_reg(&self, gicr_base: u64) -> cpu::Result<()> {
+        info!("Setting GICR base to: {:#x}, vp_index: {:?}", gicr_base, self.vp_index);
+        let arr_reg_name_value = [(hv_register_name_HV_ARM64_REGISTER_GICR_BASE_GPA, gicr_base)];
+        set_registers_64!(self.fd, arr_reg_name_value)
+            .map_err(|e| cpu::HypervisorCpuError::SetRegister(e.into()))?;
 
         Ok(())
     }

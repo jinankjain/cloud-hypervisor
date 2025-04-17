@@ -460,6 +460,15 @@ impl Vcpu {
             .set_sev_control_register(vmsa_pfn)
             .map_err(Error::SetSevControlRegister)
     }
+
+    #[cfg(target_arch = "aarch64")]
+    pub fn set_redist_regs(&self, vp_idx: u64, base_redist_addr: u64, redist_size: u64) -> Result<()> {
+        let gicr_base = base_redist_addr + (arch::layout::GIC_V3_REDIST_SIZE * vp_idx);
+        assert!(gicr_base + arch::layout::GIC_V3_REDIST_SIZE <= base_redist_addr + redist_size);
+        self.vcpu
+            .set_redist_reg(gicr_base)
+            .map_err(Error::VcpuArmFinalize)
+    }
 }
 
 impl Pausable for Vcpu {}

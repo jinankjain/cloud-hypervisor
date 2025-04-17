@@ -33,7 +33,7 @@ use arch::PciSpaceInfo;
 use arch::{get_host_cpu_phys_bits, EntryPoint, NumaNode, NumaNodes};
 #[cfg(target_arch = "aarch64")]
 use devices::interrupt_controller;
-use devices::AcpiNotificationFlags;
+use devices::{gic, AcpiNotificationFlags};
 #[cfg(all(target_arch = "aarch64", feature = "guest_debug"))]
 use gdbstub_arch::aarch64::reg::AArch64CoreRegs as CoreRegs;
 #[cfg(all(target_arch = "x86_64", feature = "guest_debug"))]
@@ -2111,14 +2111,14 @@ impl Vm {
         let tdx_enabled = self.config.lock().unwrap().is_tdx_enabled();
 
         // Configure the vcpus that have been created
-        let vcpus = self.cpu_manager.lock().unwrap().vcpus();
-        for vcpu in vcpus {
+        let vcpus = self.cpu_manager.lock().unwrap().vcpus().clone();
+        for vcpu in &vcpus {
             let guest_memory = &self.memory_manager.lock().as_ref().unwrap().guest_memory();
             let boot_setup = entry_point.map(|e| (e, guest_memory));
             self.cpu_manager
                 .lock()
                 .unwrap()
-                .configure_vcpu(vcpu, boot_setup)
+                .configure_vcpu(vcpu.clone(), boot_setup)
                 .map_err(Error::CpuManager)?;
         }
 
@@ -2152,6 +2152,22 @@ impl Vm {
             })
             .transpose()?;
 
+        let vgic = self
+            .device_manager
+            .lock()
+            .unwrap()
+            .get_interrupt_controller()
+            .unwrap()
+            .lock()
+            .unwrap()
+            .get_vgic()
+            .unwrap();
+
+        let redist_addr = vgic.lock().unwrap().device_properties();
+
+        for (vp_idx, vcpu) in vcpus.iter().enumerate() {
+            vcpu.lock().unwrap().set_redist_regs(vp_idx as u64, redist_addr[2], redist_addr[3]).map_err(Error::CpuManager)?;
+        }
         // #[cfg(target_arch = "x86_64")]
         // Note: For x86, always call this function before invoking start boot vcpus.
         // Otherwise guest would fail to boot because we haven't created the
